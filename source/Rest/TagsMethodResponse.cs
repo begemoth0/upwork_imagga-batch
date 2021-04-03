@@ -24,5 +24,12 @@ namespace ImaggaBatchUploader.Rest
 			[JsonProperty("tag")]
 			public Dictionary<string, string> Tag { get; set; }
 		}
+		public class TagMethodResult
+		{
+			[JsonProperty("tags")]
+			public TagItem[] Tags { get; set; }
+		}
+		[JsonProperty("result")]
+		public TagMethodResult Result { get; set; }
 	}
 }

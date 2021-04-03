@@ -73,13 +73,17 @@ namespace ImaggaBatchUploader
 			// tsLblStatus
 			// 
 			this.tsLblStatus.Name = "tsLblStatus";
-			this.tsLblStatus.Size = new System.Drawing.Size(118, 17);
+			this.tsLblStatus.Size = new System.Drawing.Size(485, 17);
+			this.tsLblStatus.Spring = true;
 			this.tsLblStatus.Text = "Select folder to start..";
 			// 
 			// toolStripProgressBar1
 			// 
+			this.toolStripProgressBar1.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+			this.toolStripProgressBar1.MarqueeAnimationSpeed = 0;
 			this.toolStripProgressBar1.Name = "toolStripProgressBar1";
 			this.toolStripProgressBar1.Size = new System.Drawing.Size(350, 16);
+			this.toolStripProgressBar1.Visible = false;
 			// 
 			// gbFolderInfo
 			// 
@@ -109,6 +113,7 @@ namespace ImaggaBatchUploader
 			this.btnStartStop.Text = "Start tagging";
 			this.toolTip1.SetToolTip(this.btnStartStop, "Select folder to start tagging.");
 			this.btnStartStop.UseVisualStyleBackColor = true;
+			this.btnStartStop.Click += new System.EventHandler(this.btnStartStop_Click);
 			// 
 			// llErrorsCount
 			// 
@@ -189,7 +194,7 @@ namespace ImaggaBatchUploader
 			this.tbSelectedFolder.ReadOnly = true;
 			this.tbSelectedFolder.Size = new System.Drawing.Size(361, 23);
 			this.tbSelectedFolder.TabIndex = 4;
-			this.tbSelectedFolder.Text = "<select folder>";
+			this.tbSelectedFolder.Text = "                         <press this button to select folder -->";
 			// 
 			// btnSelectFolder
 			// 
@@ -212,6 +217,9 @@ namespace ImaggaBatchUploader
 			// 
 			// groupBox1
 			// 
+			this.groupBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
 			this.groupBox1.Controls.Add(this.tbLog);
 			this.groupBox1.Location = new System.Drawing.Point(12, 122);
 			this.groupBox1.Name = "groupBox1";
@@ -249,6 +257,7 @@ namespace ImaggaBatchUploader
 			this.MaximizeBox = false;
 			this.Name = "frmMain";
 			this.Text = "Imagga.com batch tagger";
+			this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.frmMain_FormClosing);
 			this.Load += new System.EventHandler(this.frmMain_Load);
 			this.statusStrip1.ResumeLayout(false);
 			this.statusStrip1.PerformLayout();

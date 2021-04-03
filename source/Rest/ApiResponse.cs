@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -25,5 +26,10 @@ namespace ImaggaBatchUploader.Rest
 		}
 		[JsonProperty("status")]
 		public ApiStatus Status { get; set; }
+		/// <summary>
+		/// Deserialized properties with no matching class member
+		/// </summary>
+		[JsonExtensionData]
+		public IDictionary<string, JToken> ExtraData;
 	}
 }

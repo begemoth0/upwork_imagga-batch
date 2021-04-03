@@ -22,7 +22,7 @@ namespace ImaggaBatchUploader.Rest
 		/// <param name="apiKey">API user account name</param>
 		/// <param name="apiSecret">API user secret</param>
 		/// <param name="timeout">API calls timeout in seconds</param>
-		public ApiClient(string baseUrl, string apiKey, string apiSecret, int timeout = 60)
+		public ApiClient(string baseUrl, string apiKey, string apiSecret, int timeout = 60000)
 		{
 			authHeader = "Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes($"{apiKey}:{apiSecret}"));
 			client = new RestClient(baseUrl);
@@ -39,6 +39,19 @@ namespace ImaggaBatchUploader.Rest
 			return request;
 		}
 
+		private T ExecuteRequest<T>(RestRequest request)
+		{
+			var response = client.Execute(request);
+
+			if (response.StatusCode == System.Net.HttpStatusCode.OK)
+			{
+				var result = JsonConvert.DeserializeObject<T>(response.Content);
+				return result;
+			}
+			else
+				throw new ApiException(response.ErrorException.Message, response.StatusCode, response.ErrorException);
+		}
+
 		/// <summary>
 		/// Call tag method https://docs.imagga.com/#tags passing image file name as parameter
 		/// </summary>
@@ -48,15 +61,13 @@ namespace ImaggaBatchUploader.Rest
 		{
 			var request = CreateRequest("/tags", Method.POST);
 			request.AddFile("image", imagePath);
-			var response = client.Execute(request);
+			return ExecuteRequest<TagsMethodResponse>(request);
+		}
 
-			if (response.StatusCode == System.Net.HttpStatusCode.OK)
-			{
-				var result = JsonConvert.DeserializeObject<TagsMethodResponse>(response.Content);
-				return result;
-			}
-			else
-				throw new WebException(response.Content, response.ErrorException);
+		public ApiResponse Usage()
+		{
+			var request = CreateRequest("/usage", Method.GET);
+			return ExecuteRequest<ApiResponse>(request);
 		}
 	}
 }
