@@ -30,6 +30,7 @@ namespace ImaggaBatchUploader
 		private void InitializeComponent()
 		{
 			this.components = new System.ComponentModel.Container();
+			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
 			this.fbDlg = new System.Windows.Forms.FolderBrowserDialog();
 			this.statusStrip1 = new System.Windows.Forms.StatusStrip();
 			this.tsLblStatus = new System.Windows.Forms.ToolStripStatusLabel();
@@ -192,27 +193,30 @@ namespace ImaggaBatchUploader
 			this.tbSelectedFolder.Location = new System.Drawing.Point(12, 12);
 			this.tbSelectedFolder.Name = "tbSelectedFolder";
 			this.tbSelectedFolder.ReadOnly = true;
-			this.tbSelectedFolder.Size = new System.Drawing.Size(361, 23);
+			this.tbSelectedFolder.Size = new System.Drawing.Size(374, 23);
 			this.tbSelectedFolder.TabIndex = 4;
 			this.tbSelectedFolder.Text = "                         <press this button to select folder -->";
 			// 
 			// btnSelectFolder
 			// 
-			this.btnSelectFolder.Location = new System.Drawing.Point(379, 12);
+			this.btnSelectFolder.Image = ((System.Drawing.Image)(resources.GetObject("btnSelectFolder.Image")));
+			this.btnSelectFolder.Location = new System.Drawing.Point(392, 12);
 			this.btnSelectFolder.Name = "btnSelectFolder";
 			this.btnSelectFolder.Size = new System.Drawing.Size(27, 23);
 			this.btnSelectFolder.TabIndex = 5;
 			this.btnSelectFolder.Text = "...";
+			this.toolTip1.SetToolTip(this.btnSelectFolder, "Select folder for image tagging");
 			this.btnSelectFolder.UseVisualStyleBackColor = true;
 			this.btnSelectFolder.Click += new System.EventHandler(this.btnSelectFolder_Click);
 			// 
 			// btnSettings
 			// 
-			this.btnSettings.Location = new System.Drawing.Point(426, 11);
+			this.btnSettings.Image = ((System.Drawing.Image)(resources.GetObject("btnSettings.Image")));
+			this.btnSettings.Location = new System.Drawing.Point(460, 11);
 			this.btnSettings.Name = "btnSettings";
-			this.btnSettings.Size = new System.Drawing.Size(61, 23);
+			this.btnSettings.Size = new System.Drawing.Size(27, 23);
 			this.btnSettings.TabIndex = 6;
-			this.btnSettings.Text = "Settings";
+			this.toolTip1.SetToolTip(this.btnSettings, "Open settings window");
 			this.btnSettings.UseVisualStyleBackColor = true;
 			this.btnSettings.Click += new System.EventHandler(this.btnSettings_Click);
 			// 
@@ -255,6 +259,7 @@ namespace ImaggaBatchUploader
 			this.Controls.Add(this.tbSelectedFolder);
 			this.Controls.Add(this.gbFolderInfo);
 			this.Controls.Add(this.statusStrip1);
+			this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
 			this.MaximizeBox = false;
 			this.Name = "MainForm";
 			this.Text = "Imagga.com batch tagger";
