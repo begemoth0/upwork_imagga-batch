@@ -212,10 +212,10 @@ namespace ImaggaBatchUploader
 				var fname = Path.GetFileName(imagePath);
 				if (processedImages.Contains(fname))
 					continue;
-				FileInfo fi = new FileInfo(imagePath);
-				logger.Debug($"Tagging '{fname}', file size: {GetBytesReadable(fi.Length)}");
 				try
 				{
+					FileInfo fi = new FileInfo(imagePath);
+					logger.Debug($"Tagging '{fname}', file size: {GetBytesReadable(fi.Length)}");
 					var response = api.TagsByImagePath(imagePath);
 					foreach (var t in response.Result.Tags)
 					{
