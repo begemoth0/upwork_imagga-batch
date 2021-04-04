@@ -1,5 +1,4 @@
 ﻿using NLog;
-using NLog.Windows.Forms;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,10 +19,8 @@ namespace ImaggaBatchUploader
 		{
 			InitializeComponent();
 			var configuration = LogManager.Configuration;
-			var tbTarget = new FormControlTarget()
+			var tbTarget = new TextBoxTarget(tbLog)
 			{
-				FormName = this.Name,
-				ControlName = this.tbLog.Name,
 				Layout = "[${time}]${level:uppercase=true:padding=6}| ${message}\r\n"
 			};
 			configuration.AddRule(LogLevel.Debug, LogLevel.Fatal, tbTarget);
