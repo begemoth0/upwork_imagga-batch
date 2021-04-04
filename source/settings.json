@@ -1,0 +1,10 @@
+{
+  "ApiKey": "acc_a5edda84c39d12c",
+  "ApiSecret": "7cf5ff22dc058eb727b7d9541c7bca5e",
+  "ApiEndpoint": "https://api.imagga.com",
+  "ImageExtensions": [
+    ".jpg",
+    ".jpeg",
+    ".png"
+  ]
+}

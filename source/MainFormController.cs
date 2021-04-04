@@ -63,18 +63,18 @@ namespace ImaggaBatchUploader
 		/// </summary>
 		/// <param name="path"></param>
 		/// <returns></returns>
-		public bool SelectDirectory(string path)
+		public bool SelectDirectory(string path, string[] allowedExtensions)
 		{
 			List<string> images = null;
 			int unrecognized;
 			try
 			{
 				var files = Directory.EnumerateFiles(path);
-				var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" }.ToHashSet();
-				images = files.Where(a => allowedExtensions.Contains(Path.GetExtension(a))).ToList();
+				var extSet = allowedExtensions.ToHashSet();
+				images = files.Where(a => extSet.Contains(Path.GetExtension(a))).ToList();
 				var fc = files.Count();
 				unrecognized =  fc - images.Count;
-				logger.Info("Selected folder: {0}. Total files: {1}, images: {2}", path, fc, images.Count);
+				logger.Info($"Selected folder: {path}. Images extensions: '{string.Join(' ', allowedExtensions)}'. Total files: {fc}, images: {images.Count}.");
 			}
 			catch (Exception ex)
 			{
@@ -112,8 +112,20 @@ namespace ImaggaBatchUploader
 		/// <param name="updateCallback">Delegate to call when another image in batch is processed.</param>
 		/// <param name="finishedCallback">Delegate to call when task finishes. Parameter is success state.</param>
 		/// <returns>Task instance if tagging is ready to start, null otherwise (check LastError then) </returns>
-		public Task StartTagging(Action updateCallback, Action<bool> finishedCallback)
+		public Task StartTagging(Action updateCallback, Action<bool> finishedCallback, Settings settings)
 		{
+			ApiClient api; 
+			try
+			{
+				logger.Debug($"Testing API client. Endpoint: {settings.ApiEndpoint}, API Key: {settings.ApiKey}");
+				api = new ApiClient(settings.ApiEndpoint, settings.ApiKey, settings.ApiSecret);
+			}
+			catch (Exception ex)
+			{
+				logger.Error($"ApiCLient constructor failed! {ex.Message}");
+				LastError = $"Can't instantiate API client. See intermediate output for details.";
+				return null;
+			}
 			CsvWriter tagsCsv = null, errorCsv = null;
 			// helper for cleanup consistency and code neatness
 			Task cleanup(string errorMessage)
@@ -146,13 +158,29 @@ namespace ImaggaBatchUploader
 			CancellationTokenSource cts = new CancellationTokenSource();
 			cancellationTokenSource = cts;
 			errorsCsvPath = errorPath;
-			var task = new Task(() => BatchProcessingAction(tagsCsv, errorCsv, updateCallback, finishedCallback, cts.Token), cts.Token);
+			var task = new Task(() => BatchProcessingAction(tagsCsv, errorCsv, updateCallback, finishedCallback, api, cts.Token), cts.Token);
 			return task;
 		}
 
-		private void BatchProcessingAction(CsvWriter tagsCsv, CsvWriter errorsCsv, Action updateCallback, Action<bool> finishedCallback, CancellationToken ct)
+		private void BatchProcessingAction(CsvWriter tagsCsv, CsvWriter errorsCsv, 
+			Action updateCallback, Action<bool> finishedCallback,
+			ApiClient api,
+			CancellationToken ct)
 		{
-			var api = new ApiClient("https://api.imagga.com/v2", "acc_59cb33ad87160a5", "29bcdde4fc758fdb61fbbc5ad32a75c9");
+			void cleanup(bool result)
+			{
+				// critical section to prevent race condition
+				lock (this)
+				{
+					cancellationTokenSource = null;
+				}
+				// close all CSV writers
+				tagsCsv.Dispose();
+				errorsCsv.Dispose();
+				if (Errors.Count == 0)
+					File.Delete(errorsCsvPath);
+				finishedCallback(result);
+			}
 			try
 			{
 				var usage = api.Usage();
@@ -163,14 +191,15 @@ namespace ImaggaBatchUploader
 				if (requestsLeft < ImagesList.Count)
 				{
 					LastError = $"Insufficient API calls quota. Images to tag: {ImagesList.Count}, requests left: {requestsLeft}. Reduce number of images in the batch or upgrade API usage restrictions.";
-					finishedCallback(false);
+					cleanup(false);
+					return;
 				}
 			}
 			catch (Exception ex)
 			{
 				LastError = "Can't start batch processing. See immediate output for details.";
 				logger.Error(ex.Message);
-				finishedCallback(false);
+				cleanup(false);
 				return;
 			}
 			var processedImages = Tags.Select(a => a.Filename).ToHashSet();
@@ -216,7 +245,6 @@ namespace ImaggaBatchUploader
 				}
 				if (cancellationTokenSource.Token.WaitHandle.WaitOne(0))
 					break;
-
 				updateCallback();
 			}
 			// mock: waiting for manual cancel
@@ -224,17 +252,8 @@ namespace ImaggaBatchUploader
 				logger.Info("Batch cancelled.");
 			else
 				logger.Info("Batch finished");
-			// critical section to prevent race condition
-			lock(this)
-			{
-				cancellationTokenSource = null;
-			}
-			// close all CSV writers
-			tagsCsv.Dispose();
-			errorsCsv.Dispose();
-			if (Errors.Count == 0)
-				File.Delete(errorsCsvPath);
-			finishedCallback(true);
+			cleanup(true);
+
 		}
 
 		public void StopTagging()

@@ -10,11 +10,13 @@ using System.Windows.Forms;
 
 namespace ImaggaBatchUploader
 {
-	public partial class frmMain : Form
+	public partial class MainForm : Form
 	{
 		private static Logger logger;
 		private MainFormController logic;
-		public frmMain()
+		private Settings settings;
+
+		public MainForm()
 		{
 			InitializeComponent();
 			var configuration = LogManager.Configuration;
@@ -74,7 +76,7 @@ namespace ImaggaBatchUploader
 			var res = fbDlg.ShowDialog();
 			if (res == DialogResult.OK)
 			{
-				if (!logic.SelectDirectory(fbDlg.SelectedPath))
+				if (!logic.SelectDirectory(fbDlg.SelectedPath, settings.ImageExtensions))
 					MessageBox.Show(logic.LastError, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
 				BindState();
 			}
@@ -82,10 +84,11 @@ namespace ImaggaBatchUploader
 
 		private void frmMain_Load(object sender, EventArgs e)
 		{
+			settings = SettingsController.LoadSettings();
 			logic = new MainFormController(logger);
 		}
 
-		
+
 		/// <summary>
 		/// Count unique image names in list of tags
 		/// </summary>
@@ -117,7 +120,7 @@ namespace ImaggaBatchUploader
 		{
 			if (!logic.IsTaggingInProcess)
 			{
-				var task = logic.StartTagging(BatchUpdatedCallback, BatchFinishedCallback);
+				var task = logic.StartTagging(BatchUpdatedCallback, BatchFinishedCallback, settings);
 				BindState();
 				if (task != null)
 				{
@@ -163,6 +166,16 @@ namespace ImaggaBatchUploader
 		private void frmMain_FormClosing(object sender, FormClosingEventArgs e)
 		{
 			logic.StopTagging();
+		}
+
+		private void btnSettings_Click(object sender, EventArgs e)
+		{
+			var frmSettings = new SettingsForm(settings);
+			
+			if (frmSettings.ShowDialog() == DialogResult.OK)
+			{
+				this.settings = frmSettings.SettingsObject;
+			}
 		}
 	}
 }

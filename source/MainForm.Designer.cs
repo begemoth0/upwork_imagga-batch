@@ -1,7 +1,7 @@
 ﻿
 namespace ImaggaBatchUploader
 {
-	partial class frmMain
+	partial class MainForm
 	{
 		/// <summary>
 		/// Required designer variable.
@@ -208,12 +208,13 @@ namespace ImaggaBatchUploader
 			// 
 			// btnSettings
 			// 
-			this.btnSettings.Location = new System.Drawing.Point(432, 11);
+			this.btnSettings.Location = new System.Drawing.Point(426, 11);
 			this.btnSettings.Name = "btnSettings";
-			this.btnSettings.Size = new System.Drawing.Size(55, 23);
+			this.btnSettings.Size = new System.Drawing.Size(61, 23);
 			this.btnSettings.TabIndex = 6;
-			this.btnSettings.Text = "settings";
+			this.btnSettings.Text = "Settings";
 			this.btnSettings.UseVisualStyleBackColor = true;
+			this.btnSettings.Click += new System.EventHandler(this.btnSettings_Click);
 			// 
 			// groupBox1
 			// 
@@ -243,7 +244,7 @@ namespace ImaggaBatchUploader
 			this.tbLog.Size = new System.Drawing.Size(462, 209);
 			this.tbLog.TabIndex = 0;
 			// 
-			// frmMain
+			// MainForm
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -255,7 +256,7 @@ namespace ImaggaBatchUploader
 			this.Controls.Add(this.gbFolderInfo);
 			this.Controls.Add(this.statusStrip1);
 			this.MaximizeBox = false;
-			this.Name = "frmMain";
+			this.Name = "MainForm";
 			this.Text = "Imagga.com batch tagger";
 			this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.frmMain_FormClosing);
 			this.Load += new System.EventHandler(this.frmMain_Load);

@@ -49,7 +49,10 @@ namespace ImaggaBatchUploader.Rest
 				return result;
 			}
 			else
-				throw new ApiException(response.ErrorException.Message, response.StatusCode, response.ErrorException);
+			{
+				var msg = response.ErrorException != null ? response.ErrorException.Message : response.StatusDescription;
+				throw new ApiException(msg, response.StatusCode, response.ErrorException);
+			}
 		}
 
 		/// <summary>
@@ -59,14 +62,14 @@ namespace ImaggaBatchUploader.Rest
 		/// <returns></returns>
 		public TagsMethodResponse TagsByImagePath(string imagePath)
 		{
-			var request = CreateRequest("/tags", Method.POST);
+			var request = CreateRequest("v2/tags", Method.POST);
 			request.AddFile("image", imagePath);
 			return ExecuteRequest<TagsMethodResponse>(request);
 		}
 
 		public ApiResponse Usage()
 		{
-			var request = CreateRequest("/usage", Method.GET);
+			var request = CreateRequest("v2/usage", Method.GET);
 			return ExecuteRequest<ApiResponse>(request);
 		}
 	}
