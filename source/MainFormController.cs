@@ -203,6 +203,10 @@ namespace ImaggaBatchUploader
 				return;
 			}
 			var processedImages = Tags.Select(a => a.Filename).ToHashSet();
+			errorsCsv.WriteHeader<ImageError>();
+			errorsCsv.NextRecord();
+			int taggedSuccessfully = 0;
+			int taggedWithErrors = 0;
 			foreach (var imagePath in ImagesList)
 			{
 				var fname = Path.GetFileName(imagePath);
@@ -230,6 +234,8 @@ namespace ImaggaBatchUploader
 						}
 
 					}
+					logger.Info($"Tagged OK: '{fname}', {response.Result.Tags.Count()} tags received");
+					taggedSuccessfully += 1;
 				}
 				catch (Exception ex)
 				{
@@ -237,11 +243,14 @@ namespace ImaggaBatchUploader
 					var error = new ImageError()
 					{
 						Filename = fname,
-						HttpCode = aex != null ? aex.HttpCode.ToString() : null,
+						HttpCode = aex != null ? ((int)aex.HttpCode).ToString(): null,
 						ErrorDescription = ex.Message
 					};
 					Errors.Add(error);
+					logger.Warn($"Tagging error: '{fname}', {error.ErrorDescription}");
 					errorsCsv.WriteRecord(error);
+					errorsCsv.NextRecord();
+					taggedWithErrors += 1;
 				}
 				if (cancellationTokenSource.Token.WaitHandle.WaitOne(0))
 					break;
@@ -249,9 +258,9 @@ namespace ImaggaBatchUploader
 			}
 			// mock: waiting for manual cancel
 			if (cancellationTokenSource.Token.WaitHandle.WaitOne(0))
-				logger.Info("Batch cancelled.");
+				logger.Info($"Batch cancelled. Images successfully tagged in this session: {taggedSuccessfully}, with errors: {taggedWithErrors}.");
 			else
-				logger.Info("Batch finished");
+				logger.Info($"Batch finished. Images successfully tagged in this session: {taggedSuccessfully}, with errors: {taggedWithErrors}.");
 			cleanup(true);
 
 		}
