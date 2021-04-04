@@ -54,9 +54,11 @@ namespace ImaggaBatchUploader
 				lblTotalImagesCount.Text = logic.ImagesList.Count.ToString();
 				lblUnrecognizedFilesCount.Text = logic.UnrecognizedFilesCount.ToString();
 				btnStartStop.Enabled = true;
+				llProcessedCount.Text = logic.Tags.Count.ToString();
+				llErrorsCount.Text = logic.Errors.Count.ToString();
+				BindProgressCounters(logic.Tags, logic.Errors);
 				if (logic.IsTaggingInProcess)
 				{
-					toolStripProgressBar1.Value = CountImagesFromTags(logic.Tags) + CountImagesFromErrors(logic.Errors);
 					toolStripProgressBar1.Visible = true;
 					btnStartStop.Text = "Stop";
 					tsLblStatus.Text = "Tagging...";
@@ -89,29 +91,19 @@ namespace ImaggaBatchUploader
 		}
 
 
-		/// <summary>
-		/// Count unique image names in list of tags
-		/// </summary>
-		/// <param name="tags"></param>
-		/// <returns></returns>
-		private int CountImagesFromTags(List<ImageTag> tags)
+		private void BindProgressCounters(List<ImageTag> tags, List<ImageError> errors)
 		{
-			return tags.Select(a => a.Filename).Distinct().Count();
+			var procesedImages = tags.Select(a => a.Filename).Distinct().Count();
+			var errorImages = errors.Select(a => a.Filename).Distinct().Count();
+			llProcessedCount.Text = procesedImages.ToString();
+			llErrorsCount.Text = errorImages.ToString();
+			toolStripProgressBar1.Value = procesedImages + errorImages;
 		}
-		private int CountImagesFromErrors(List<ImageError> errors)
-		{
-			return errors.Select(a => a.Filename).Distinct().Count();
-		}
-
 		private void BatchUpdatedCallback()
 		{
 			this.Invoke(new Action(() =>
 			{
-				var procesedImages = CountImagesFromTags(logic.Tags);
-				var errorImages = CountImagesFromErrors(logic.Errors);
-				llProcessedCount.Text = procesedImages.ToString();
-				llErrorsCount.Text = errorImages.ToString();
-				toolStripProgressBar1.Value = procesedImages + errorImages;
+				BindProgressCounters(logic.Tags, logic.Errors);
 			}));
 		}
 

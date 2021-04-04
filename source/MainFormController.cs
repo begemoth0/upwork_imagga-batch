@@ -22,6 +22,7 @@ namespace ImaggaBatchUploader
 		private const string TagsFilename = "tags.csv";
 		private const string ErrorsFilename = "errors.csv";
 		private CancellationTokenSource cancellationTokenSource;
+		private string tagsCsvPath;
 		private string errorsCsvPath;
 		/// <summary>
 		/// Error which occured during last method call
@@ -73,7 +74,7 @@ namespace ImaggaBatchUploader
 				var extSet = allowedExtensions.ToHashSet();
 				images = files.Where(a => extSet.Contains(Path.GetExtension(a))).ToList();
 				var fc = files.Count();
-				unrecognized =  fc - images.Count;
+				unrecognized = fc - images.Count;
 				logger.Info($"Selected folder: {path}. Images extensions: '{string.Join(' ', allowedExtensions)}'. Total files: {fc}, images: {images.Count}.");
 			}
 			catch (Exception ex)
@@ -82,29 +83,61 @@ namespace ImaggaBatchUploader
 				LastError = "Can't open selected folder. See details in intermediate output.";
 				return false;
 			}
+			var targetDir = Directory.GetParent(path).FullName;
+			var folderName = Path.GetFileName(path);
+			tagsCsvPath = Path.Combine(targetDir, $"tags-{folderName}.csv");
+			errorsCsvPath = Path.Combine(targetDir, $"errors-{folderName}.csv");
+			var tags = new List<ImageTag>();
+			if (File.Exists(tagsCsvPath))
+			{
+				try
+				{
+					var imageSet = images.Select(a => Path.GetFileName(a)).ToHashSet();
+					using (var csvReader = new CsvReader(File.OpenText(tagsCsvPath), GetCsvConfiguration()))
+					{
+						var records = csvReader.GetRecords<ImageTag>().ToList();
+						// discard state for non-existing files (we don't want state labels to be confusing)
+						tags = records.Where(a => imageSet.Contains(a.Filename)).ToList();
+						logger.Info($"Loaded saved state file '{tagsCsvPath}'.");
+						var discarded = records.Count() - tags.Count;
+						if (discarded > 0)
+							logger.Info($"Discarded {discarded} records due to missing files.");
+					}
+
+				}
+				catch (Exception ex)
+				{
+					logger.Error($"Can't open {tagsCsvPath}: ${ex.Message})");
+					LastError = "Can't read saved state file. See intermediate output for details.";
+					return false;
+				}
+			}
+
 			// apply new state consistently
 			ImagesList = images;
 			SelectedDirectory = path;
 			UnrecognizedFilesCount = unrecognized;
-			Tags = new List<ImageTag>();
+			Tags = tags;
 			Errors = new List<ImageError>();
 			return true;
 		}
-		
+
+
 		/// <summary>
-		/// Helper method to ensure 
+		/// Helper method to ensure consistent CSV configuratiion
 		/// </summary>
 		/// <param name="sw"></param>
 		/// <returns></returns>
-		private CsvWriter GetCsvWriter(StreamWriter sw)
+		private CsvConfiguration GetCsvConfiguration()
 		{
 			var config = new CsvConfiguration(CultureInfo.InvariantCulture)
 			{
 				Delimiter = ";",
 				LeaveOpen = false
 			};
-			return new CsvWriter(sw, config);
+			return config;
 		}
+
 
 		/// <summary>
 		/// Start asynchronous tagging process. Reserves two output files in the folder above selected one.
@@ -114,7 +147,7 @@ namespace ImaggaBatchUploader
 		/// <returns>Task instance if tagging is ready to start, null otherwise (check LastError then) </returns>
 		public Task StartTagging(Action updateCallback, Action<bool> finishedCallback, Settings settings)
 		{
-			ApiClient api; 
+			ApiClient api;
 			try
 			{
 				logger.Debug($"Testing API client. Endpoint: {settings.ApiEndpoint}, API Key: {settings.ApiKey}");
@@ -137,15 +170,12 @@ namespace ImaggaBatchUploader
 					errorCsv.Dispose();
 				return null;
 			}
-			var targetDir = Directory.GetParent(SelectedDirectory).FullName;
-			var folderName = Path.GetFileName(SelectedDirectory);
-			var tagsPath = Path.Combine(targetDir,  $"tags-{folderName}.csv");
-			var errorPath = Path.Combine(targetDir, $"errors-{folderName}.csv");
+
 			// lock output files for writing
 			try
 			{
-				tagsCsv = GetCsvWriter(new StreamWriter(tagsPath, false, new UTF8Encoding(true)));
-				errorCsv = GetCsvWriter(new StreamWriter(errorPath, false, new UTF8Encoding(true)));
+				tagsCsv = new CsvWriter(new StreamWriter(tagsCsvPath, false, new UTF8Encoding(true)), GetCsvConfiguration());
+				errorCsv = new CsvWriter(new StreamWriter(errorsCsvPath, false, new UTF8Encoding(true)), GetCsvConfiguration());
 			}
 			catch (Exception ex)
 			{
@@ -157,12 +187,11 @@ namespace ImaggaBatchUploader
 			// 
 			CancellationTokenSource cts = new CancellationTokenSource();
 			cancellationTokenSource = cts;
-			errorsCsvPath = errorPath;
 			var task = new Task(() => BatchProcessingAction(tagsCsv, errorCsv, updateCallback, finishedCallback, api, cts.Token), cts.Token);
 			return task;
 		}
 
-		private void BatchProcessingAction(CsvWriter tagsCsv, CsvWriter errorsCsv, 
+		private void BatchProcessingAction(CsvWriter tagsCsv, CsvWriter errorsCsv,
 			Action updateCallback, Action<bool> finishedCallback,
 			ApiClient api,
 			CancellationToken ct)
@@ -243,7 +272,7 @@ namespace ImaggaBatchUploader
 					var error = new ImageError()
 					{
 						Filename = fname,
-						HttpCode = aex != null ? ((int)aex.HttpCode).ToString(): null,
+						HttpCode = aex != null ? ((int)aex.HttpCode).ToString() : null,
 						ErrorDescription = ex.Message
 					};
 					Errors.Add(error);
