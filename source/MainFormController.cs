@@ -187,7 +187,7 @@ namespace ImaggaBatchUploader
 			}
 			catch (Exception ex)
 			{
-				logger.Error($"ApiCLient constructor failed! {ex.Message}");
+				logger.Error($"ApiClient constructor failed! {ex.Message}");
 				LastError = $"Can't instantiate API client. See intermediate output for details.";
 				return null;
 			}
@@ -216,7 +216,8 @@ namespace ImaggaBatchUploader
 			}
 			// overwrite existing file with restored data to ensure consistency
 			tagsCsv.WriteRecords(Tags);
-			// 
+			// discard old errors and move on
+			Errors.Clear();
 			CancellationTokenSource cts = new CancellationTokenSource();
 			cancellationTokenSource = cts;
 			var task = new Task(() => BatchProcessingAction(tagsCsv, errorCsv, updateCallback, finishedCallback, api, settings.TaggingThreshold, cts.Token), cts.Token);
@@ -247,9 +248,16 @@ namespace ImaggaBatchUploader
 			var imageQueue = ImagesList.Where(a => !processedImages.Contains(Path.GetFileName(a))).ToList();
 			try
 			{
-				var usage = api.Usage();
-				var monthlyLimit = usage.ExtraData["result"].Value<int>("monthly_limit");
-				var monthlyRequests = usage.ExtraData["result"].Value<int>("monthly_processed");
+				var usageAsyncTask = api.Usage(ct);
+				Task.WaitAny(usageAsyncTask);
+				if (ct.IsCancellationRequested)
+				{
+					logger.Debug($"Cancelled while requesting usage statistics.");
+					cleanup(true);
+					return;
+				}
+				var monthlyLimit = usageAsyncTask.Result.ExtraData["result"].Value<int>("monthly_limit");
+				var monthlyRequests = usageAsyncTask.Result.ExtraData["result"].Value<int>("monthly_processed");
 				logger.Info($"Imagga API available. Monthly quota used: {monthlyRequests}/{monthlyLimit}. Tags left: {monthlyLimit - monthlyRequests}, required: {imageQueue.Count} ");
 				var requestsLeft = monthlyLimit - monthlyRequests;
 				if (requestsLeft < imageQueue.Count)
@@ -279,7 +287,12 @@ namespace ImaggaBatchUploader
 				{
 					FileInfo fi = new FileInfo(imagePath);
 					logger.Debug($"Tagging '{fname}', file size: {GetBytesReadable(fi.Length)}");
-					var response = api.TagsByImagePath(imagePath, taggingThreshold);
+					var tagAsyncTask = api.TagsByImagePath(imagePath, taggingThreshold, ct);
+					// waitany 
+					Task.WaitAny(tagAsyncTask);
+					if (ct.IsCancellationRequested)
+						break;
+					var response = tagAsyncTask.Result;
 					foreach (var t in response.Result.Tags)
 					{
 						foreach (var tagLanguagePair in t.Tag)
@@ -294,6 +307,7 @@ namespace ImaggaBatchUploader
 							Tags.Add(tag);
 							tagsCsv.WriteRecord(tag);
 							tagsCsv.NextRecord();
+							tagsCsv.Flush();
 						}
 
 					}
@@ -313,14 +327,13 @@ namespace ImaggaBatchUploader
 					logger.Warn($"Tagging error: '{fname}', {error.ErrorDescription}");
 					errorsCsv.WriteRecord(error);
 					errorsCsv.NextRecord();
+					errorsCsv.Flush();
 					taggedWithErrors += 1;
 				}
-				if (cancellationTokenSource.Token.WaitHandle.WaitOne(0))
-					break;
 				updateCallback();
 			}
 			// mock: waiting for manual cancel
-			if (cancellationTokenSource.Token.WaitHandle.WaitOne(0))
+			if (ct.IsCancellationRequested)
 				logger.Info($"Batch cancelled. Images successfully tagged in this session: {taggedSuccessfully}, with errors: {taggedWithErrors}.");
 			else
 				logger.Info($"Batch finished. Images successfully tagged in this session: {taggedSuccessfully}, with errors: {taggedWithErrors}.");

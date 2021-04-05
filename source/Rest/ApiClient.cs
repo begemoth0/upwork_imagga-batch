@@ -4,6 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace ImaggaBatchUploader.Rest
 {
@@ -22,7 +24,7 @@ namespace ImaggaBatchUploader.Rest
 		/// <param name="apiKey">API user account name</param>
 		/// <param name="apiSecret">API user secret</param>
 		/// <param name="timeout">API calls timeout in seconds</param>
-		public ApiClient(string baseUrl, string apiKey, string apiSecret, int timeout = 60000)
+		public ApiClient(string baseUrl, string apiKey, string apiSecret, int timeout = 120000)
 		{
 			authHeader = "Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes($"{apiKey}:{apiSecret}"));
 			client = new RestClient(baseUrl);
@@ -39,10 +41,9 @@ namespace ImaggaBatchUploader.Rest
 			return request;
 		}
 
-		private T ExecuteRequest<T>(RestRequest request)
+		private async Task<T> ExecuteRequest<T>(RestRequest request, CancellationToken ct)
 		{
-			var response = client.Execute(request);
-
+			var response = await client.ExecuteAsync(request, ct);
 			if (response.StatusCode == System.Net.HttpStatusCode.OK)
 			{
 				var result = JsonConvert.DeserializeObject<T>(response.Content);
@@ -61,19 +62,19 @@ namespace ImaggaBatchUploader.Rest
 		/// <param name="imagePath">Local absolute path to image file</param>
 		/// <param name="threshold">Thresholds the confidence of tags in the result to the number you set. Double value is expected. By default all tags with confidence above 7 are being returned and you cannot go lower than that. Default: 0</param>
 		/// <returns></returns>
-		public TagsMethodResponse TagsByImagePath(string imagePath, int threshold)
+		public async Task<TagsMethodResponse> TagsByImagePath(string imagePath, int threshold, CancellationToken token)
 		{
 			var request = CreateRequest("v2/tags", Method.POST);
 			request.AddFile("image", imagePath);
 			if (threshold > 0)
 				request.AddParameter("threshold", threshold);
-			return ExecuteRequest<TagsMethodResponse>(request);
+			return await ExecuteRequest<TagsMethodResponse>(request, token);
 		}
 
-		public ApiResponse Usage()
+		public async Task<ApiResponse> Usage(CancellationToken token = default)
 		{
 			var request = CreateRequest("v2/usage", Method.GET);
-			return ExecuteRequest<ApiResponse>(request);
+			return await ExecuteRequest<ApiResponse>(request, token);
 		}
 	}
 }

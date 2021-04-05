@@ -54,10 +54,8 @@ namespace ImaggaBatchUploader
 				btnStartStop.Enabled = true;
 				llProcessedCount.Text = logic.Tags.Count.ToString();
 				llProcessedCount.Tag = logic.TagsCsvPath;
-				llProcessedCount.Enabled = logic.Tags.Count > 0;
 				llErrorsCount.Text = logic.Errors.Count.ToString();
 				llErrorsCount.Tag = logic.ErrorsCsvPath;
-				llErrorsCount.Enabled = logic.Errors.Count > 0;
 				BindProgressCounters(logic.Tags, logic.Errors);
 				btnSelectFolder.Enabled = !logic.IsTaggingInProcess;
 				if (logic.IsTaggingInProcess)
@@ -104,6 +102,8 @@ namespace ImaggaBatchUploader
 			var errorImages = errors.Select(a => a.Filename).Distinct().Count();
 			llProcessedCount.Text = procesedImages.ToString();
 			llErrorsCount.Text = errorImages.ToString();
+			llErrorsCount.Enabled = logic.Errors.Count > 0;
+			llProcessedCount.Enabled = logic.Tags.Count > 0;
 			toolStripProgressBar1.Value = procesedImages + errorImages;
 		}
 		private void BatchUpdatedCallback()
