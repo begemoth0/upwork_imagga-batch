@@ -244,15 +244,15 @@ namespace ImaggaBatchUploader
 				finishedCallback(result);
 			}
 			var processedImages = Tags.Select(a => a.Filename).ToHashSet();
-			var imageQueue = ImagesList.Where(a => !processedImages.Contains(Path.GetFileName(a)));
+			var imageQueue = ImagesList.Where(a => !processedImages.Contains(Path.GetFileName(a))).ToList();
 			try
 			{
 				var usage = api.Usage();
 				var monthlyLimit = usage.ExtraData["result"].Value<int>("monthly_limit");
 				var monthlyRequests = usage.ExtraData["result"].Value<int>("monthly_processed");
-				logger.Info($"Imagga API available. Monthly quota used: {monthlyRequests}/{monthlyLimit}. Tags left: {monthlyLimit - monthlyRequests}, required: {imageQueue.Count()} ");
+				logger.Info($"Imagga API available. Monthly quota used: {monthlyRequests}/{monthlyLimit}. Tags left: {monthlyLimit - monthlyRequests}, required: {imageQueue.Count} ");
 				var requestsLeft = monthlyLimit - monthlyRequests;
-				if (requestsLeft < ImagesList.Count)
+				if (requestsLeft < imageQueue.Count)
 				{
 					LastError = $"Insufficient API calls quota. Reduce number of images in the batch or upgrade API usage restrictions. See intermediate output for details.";
 					cleanup(false);
