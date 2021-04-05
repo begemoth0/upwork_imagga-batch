@@ -8,6 +8,7 @@ using System.Text;
 using System.Windows.Forms;
 using System.Diagnostics;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace ImaggaBatchUploader
 {
@@ -15,6 +16,7 @@ namespace ImaggaBatchUploader
 	{
 		private static Logger logger;
 		private MainFormController logic;
+		private Task taggingTask = null;
 
 		public MainForm()
 		{
@@ -119,11 +121,11 @@ namespace ImaggaBatchUploader
 		{
 			if (!logic.IsTaggingInProcess)
 			{
-				var task = logic.StartTagging(BatchUpdatedCallback, BatchFinishedCallback);
+				taggingTask = logic.StartTagging(BatchUpdatedCallback, BatchFinishedCallback);
 				BindState();
-				if (task != null)
+				if (taggingTask != null)
 				{
-					task.Start();
+					taggingTask.Start();
 				}
 				else
 				{
@@ -158,13 +160,16 @@ namespace ImaggaBatchUploader
 				{
 					stoppedManually = false;
 				}
+				taggingTask = null;
 				BindState();
 			}));
 		}
 
-		private void frmMain_FormClosing(object sender, FormClosingEventArgs e)
+		private async void frmMain_FormClosing(object sender, FormClosingEventArgs e)
 		{
 			logic.StopTagging();
+			if (taggingTask != null)
+				await taggingTask;
 		}
 
 		private void btnSettings_Click(object sender, EventArgs e)

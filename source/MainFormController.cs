@@ -101,8 +101,8 @@ namespace ImaggaBatchUploader
 			try
 			{
 				var files = Directory.EnumerateFiles(path);
-				var extSet = allowedExtensions.ToHashSet();
-				images = files.Where(a => extSet.Contains(Path.GetExtension(a))).ToList();
+				var extSet = allowedExtensions.Select(a => a.ToLower()).ToHashSet();
+				images = files.Where(a => extSet.Contains(Path.GetExtension(a).ToLower())).ToList();
 				var fc = files.Count();
 				unrecognized = fc - images.Count;
 				logger.Info($"Selected folder: {path}. Images extensions: '{string.Join(' ', allowedExtensions)}'. Total files: {fc}, images: {images.Count}.");
@@ -346,7 +346,9 @@ namespace ImaggaBatchUploader
 			lock (this)
 			{
 				if (cancellationTokenSource != null)
+				{
 					cancellationTokenSource.Cancel();
+				}
 			}
 		}
 
