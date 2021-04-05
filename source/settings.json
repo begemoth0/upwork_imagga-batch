@@ -6,5 +6,6 @@
     ".jpg",
     ".jpeg",
     ".png"
-  ]
+  ],
+  "TaggingThreshold": 0
 }

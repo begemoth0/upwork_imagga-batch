@@ -33,16 +33,14 @@ namespace ImaggaBatchUploader
 			try
 			{
 				// collect settings object
-				Settings sobj = new Settings()
-				{
-					ApiKey = tbKey.Text.Trim(),
-					ApiSecret = tbSecret.Text.Trim(),
-					ApiEndpoint = tbEndpoint.Text.Trim(),
-					ImageExtensions = tbExtensions.Text
-						.Split(' ', StringSplitOptions.RemoveEmptyEntries)
-						.Where(a => a.IndexOfAny(Path.GetInvalidFileNameChars()) < 0)
-						.ToArray()
-				};
+				Settings sobj = SettingsObject.Clone();
+				sobj.ApiKey = tbKey.Text.Trim();
+				sobj.ApiSecret = tbSecret.Text.Trim();
+				sobj.ApiEndpoint = tbEndpoint.Text.Trim();
+				sobj.ImageExtensions = tbExtensions.Text
+					.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+					.Where(a => a.IndexOfAny(Path.GetInvalidFileNameChars()) < 0)
+					.ToArray();
 				// try to save data
 				SettingsController.SaveSettings(sobj);
 				// replace settings object if successfull

@@ -193,13 +193,14 @@ namespace ImaggaBatchUploader
 			// 
 			CancellationTokenSource cts = new CancellationTokenSource();
 			cancellationTokenSource = cts;
-			var task = new Task(() => BatchProcessingAction(tagsCsv, errorCsv, updateCallback, finishedCallback, api, cts.Token), cts.Token);
+			var task = new Task(() => BatchProcessingAction(tagsCsv, errorCsv, updateCallback, finishedCallback, api, settings.TaggingThreshold, cts.Token), cts.Token);
 			return task;
 		}
 
 		private void BatchProcessingAction(CsvWriter tagsCsv, CsvWriter errorsCsv,
 			Action updateCallback, Action<bool> finishedCallback,
 			ApiClient api,
+			int taggingThreshold,
 			CancellationToken ct)
 		{
 			void cleanup(bool result)
@@ -242,6 +243,8 @@ namespace ImaggaBatchUploader
 			errorsCsv.NextRecord();
 			int taggedSuccessfully = 0;
 			int taggedWithErrors = 0;
+			if (taggingThreshold > 0)
+				logger.Info($"Custom tagging confidence threshold set: {taggingThreshold}");
 			foreach (var imagePath in ImagesList)
 			{
 				var fname = Path.GetFileName(imagePath);
@@ -251,7 +254,7 @@ namespace ImaggaBatchUploader
 				{
 					FileInfo fi = new FileInfo(imagePath);
 					logger.Debug($"Tagging '{fname}', file size: {GetBytesReadable(fi.Length)}");
-					var response = api.TagsByImagePath(imagePath);
+					var response = api.TagsByImagePath(imagePath, taggingThreshold);
 					foreach (var t in response.Result.Tags)
 					{
 						foreach (var tagLanguagePair in t.Tag)
@@ -269,7 +272,7 @@ namespace ImaggaBatchUploader
 						}
 
 					}
-					logger.Info($"Tagged OK: '{fname}', {response.Result.Tags.Count()} tags received");
+					logger.Info($"Tagged OK: '{fname}', {response.Result.Tags.Count()}");
 					taggedSuccessfully += 1;
 				}
 				catch (Exception ex)

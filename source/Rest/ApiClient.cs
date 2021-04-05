@@ -59,11 +59,14 @@ namespace ImaggaBatchUploader.Rest
 		/// Call tag method https://docs.imagga.com/#tags passing image file name as parameter
 		/// </summary>
 		/// <param name="imagePath">Local absolute path to image file</param>
+		/// <param name="threshold">Thresholds the confidence of tags in the result to the number you set. Double value is expected. By default all tags with confidence above 7 are being returned and you cannot go lower than that. Default: 0</param>
 		/// <returns></returns>
-		public TagsMethodResponse TagsByImagePath(string imagePath)
+		public TagsMethodResponse TagsByImagePath(string imagePath, int threshold)
 		{
 			var request = CreateRequest("v2/tags", Method.POST);
 			request.AddFile("image", imagePath);
+			if (threshold > 0)
+				request.AddParameter("threshold", threshold);
 			return ExecuteRequest<TagsMethodResponse>(request);
 		}
 
