@@ -6,6 +6,7 @@ using System.Data;
 using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
+using System.Diagnostics;
 
 namespace ImaggaBatchUploader
 {
@@ -52,8 +53,13 @@ namespace ImaggaBatchUploader
 				lblUnrecognizedFilesCount.Text = logic.UnrecognizedFilesCount.ToString();
 				btnStartStop.Enabled = true;
 				llProcessedCount.Text = logic.Tags.Count.ToString();
+				llProcessedCount.Tag = logic.TagsCsvPath;
+				llProcessedCount.Enabled = logic.Tags.Count > 0;
 				llErrorsCount.Text = logic.Errors.Count.ToString();
+				llErrorsCount.Tag = logic.ErrorsCsvPath;
+				llErrorsCount.Enabled = logic.Errors.Count > 0;
 				BindProgressCounters(logic.Tags, logic.Errors);
+
 				if (logic.IsTaggingInProcess)
 				{
 					toolStripProgressBar1.Visible = true;
@@ -165,6 +171,23 @@ namespace ImaggaBatchUploader
 			{
 				this.settings = frmSettings.SettingsObject;
 			}
+		}
+
+		private void OpenFileFromTag(string filename)
+		{
+			var p = new Process();
+			p.StartInfo.FileName = filename;
+			p.StartInfo.UseShellExecute = true;
+			p.Start();
+		}
+		private void llErrorsCount_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+		{
+			OpenFileFromTag((string)llErrorsCount.Tag);
+		}
+
+		private void llProcessedCount_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+		{
+			OpenFileFromTag((string)llProcessedCount.Tag);
 		}
 	}
 }

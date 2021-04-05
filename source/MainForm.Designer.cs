@@ -124,6 +124,7 @@ namespace ImaggaBatchUploader
 			this.llErrorsCount.Name = "llErrorsCount";
 			this.llErrorsCount.Size = new System.Drawing.Size(0, 15);
 			this.llErrorsCount.TabIndex = 7;
+			this.llErrorsCount.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.llErrorsCount_LinkClicked);
 			// 
 			// llProcessedCount
 			// 
@@ -133,6 +134,7 @@ namespace ImaggaBatchUploader
 			this.llProcessedCount.Name = "llProcessedCount";
 			this.llProcessedCount.Size = new System.Drawing.Size(0, 15);
 			this.llProcessedCount.TabIndex = 6;
+			this.llProcessedCount.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.llProcessedCount_LinkClicked);
 			// 
 			// lblErrors
 			// 
