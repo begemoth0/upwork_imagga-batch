@@ -48,9 +48,18 @@ namespace ImaggaBatchUploader
 		/// </summary>
 		public List<ImageTag> Tags { get; set; }
 		public List<ImageError> Errors { get; private set; }
+		/// <summary>
+		/// Settings that have been loaded on program start.
+		/// </summary>
+		public Settings SettingsOriginal { get; private set; }
+		/// <summary>
+		/// Settings that have been loaded from images directory
+		/// </summary>
+		public Settings SettingsOverride { get; private set; }
 		public MainFormController(NLog.Logger logger)
 		{
 			this.logger = logger;
+			SettingsOriginal = SettingsController.LoadSettings();
 			logger.Info("Program started.");
 		}
 
@@ -70,9 +79,24 @@ namespace ImaggaBatchUploader
 		/// </summary>
 		/// <param name="path"></param>
 		/// <returns></returns>
-		public bool SelectDirectory(string path, string[] allowedExtensions)
+		public bool SelectDirectory(string path)
 		{
 			List<string> images = null;
+			Settings overrided = null;
+			var allowedExtensions = SettingsOriginal.ImageExtensions;
+			try
+			{
+				overrided = SettingsController.TryLoadSettingsOveride(path);
+				if (overrided != null)
+					allowedExtensions = overrided.ImageExtensions;
+			}
+			catch (Exception ex)
+			{
+				logger.Error(ex.Message);
+				LastError = "Can't read settings override file. See details in intermediate output.";
+				return false;
+			}
+			//var allowedExtensions = settingsOverride != null? settingsOverride.
 			int unrecognized;
 			try
 			{
@@ -125,6 +149,7 @@ namespace ImaggaBatchUploader
 			UnrecognizedFilesCount = unrecognized;
 			Tags = tags;
 			Errors = new List<ImageError>();
+			SettingsOverride = overrided;
 			return true;
 		}
 
@@ -151,9 +176,10 @@ namespace ImaggaBatchUploader
 		/// <param name="updateCallback">Delegate to call when another image in batch is processed.</param>
 		/// <param name="finishedCallback">Delegate to call when task finishes. Parameter is success state.</param>
 		/// <returns>Task instance if tagging is ready to start, null otherwise (check LastError then) </returns>
-		public Task StartTagging(Action updateCallback, Action<bool> finishedCallback, Settings settings)
+		public Task StartTagging(Action updateCallback, Action<bool> finishedCallback)
 		{
 			ApiClient api;
+			var settings = SettingsController.Merge(SettingsOriginal, SettingsOverride);
 			try
 			{
 				logger.Debug($"Testing API client. Endpoint: {settings.ApiEndpoint}, API Key: {settings.ApiKey}");
@@ -310,6 +336,11 @@ namespace ImaggaBatchUploader
 				if (cancellationTokenSource != null)
 					cancellationTokenSource.Cancel();
 			}
+		}
+
+		public void UpdateSettings(Settings settings)
+		{
+			SettingsOriginal = settings;
 		}
 
 		// Returns the human-readable file size for an arbitrary, 64-bit file size 

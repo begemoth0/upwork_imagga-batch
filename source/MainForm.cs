@@ -15,7 +15,6 @@ namespace ImaggaBatchUploader
 	{
 		private static Logger logger;
 		private MainFormController logic;
-		private Settings settings;
 
 		public MainForm()
 		{
@@ -82,7 +81,7 @@ namespace ImaggaBatchUploader
 		/// <param name="path"></param>
 		private void SelectFolder(string path)
 		{
-			if (!logic.SelectDirectory(path, settings.ImageExtensions))
+			if (!logic.SelectDirectory(path))
 				MessageBox.Show(logic.LastError, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
 			BindState();
 		}
@@ -95,7 +94,6 @@ namespace ImaggaBatchUploader
 
 		private void frmMain_Load(object sender, EventArgs e)
 		{
-			settings = SettingsController.LoadSettings();
 			logic = new MainFormController(logger);
 		}
 
@@ -121,7 +119,7 @@ namespace ImaggaBatchUploader
 		{
 			if (!logic.IsTaggingInProcess)
 			{
-				var task = logic.StartTagging(BatchUpdatedCallback, BatchFinishedCallback, settings);
+				var task = logic.StartTagging(BatchUpdatedCallback, BatchFinishedCallback);
 				BindState();
 				if (task != null)
 				{
@@ -171,12 +169,9 @@ namespace ImaggaBatchUploader
 
 		private void btnSettings_Click(object sender, EventArgs e)
 		{
-			var frmSettings = new SettingsForm(settings);
-			
+			var frmSettings = new SettingsForm(logic.SettingsOriginal, logic.SettingsOverride);
 			if (frmSettings.ShowDialog() == DialogResult.OK)
-			{
-				this.settings = frmSettings.SettingsObject;
-			}
+				logic.UpdateSettings(frmSettings.SettingsObject);
 		}
 
 		private void OpenFileFromTag(string filename)

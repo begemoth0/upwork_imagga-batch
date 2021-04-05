@@ -39,6 +39,7 @@ namespace ImaggaBatchUploader
 			this.label3 = new System.Windows.Forms.Label();
 			this.tbExtensions = new System.Windows.Forms.TextBox();
 			this.label4 = new System.Windows.Forms.Label();
+			this.lblOverrideNotification = new System.Windows.Forms.Label();
 			this.SuspendLayout();
 			// 
 			// btnCancel
@@ -127,6 +128,15 @@ namespace ImaggaBatchUploader
 			this.label4.TabIndex = 9;
 			this.label4.Text = "Image extensions:";
 			// 
+			// lblOverrideNotification
+			// 
+			this.lblOverrideNotification.AutoSize = true;
+			this.lblOverrideNotification.Location = new System.Drawing.Point(102, 159);
+			this.lblOverrideNotification.Name = "lblOverrideNotification";
+			this.lblOverrideNotification.Size = new System.Drawing.Size(241, 15);
+			this.lblOverrideNotification.TabIndex = 10;
+			this.lblOverrideNotification.Text = "Using overrided settings.  Editing is disabled.";
+			// 
 			// SettingsForm
 			// 
 			this.AcceptButton = this.btnSave;
@@ -135,6 +145,7 @@ namespace ImaggaBatchUploader
 			this.CancelButton = this.btnCancel;
 			this.ClientSize = new System.Drawing.Size(355, 218);
 			this.ControlBox = false;
+			this.Controls.Add(this.lblOverrideNotification);
 			this.Controls.Add(this.label4);
 			this.Controls.Add(this.tbExtensions);
 			this.Controls.Add(this.label3);
@@ -169,5 +180,6 @@ namespace ImaggaBatchUploader
 		internal System.Windows.Forms.TextBox tbSecret;
 		internal System.Windows.Forms.TextBox tbEndpoint;
 		internal System.Windows.Forms.TextBox tbExtensions;
+		private System.Windows.Forms.Label lblOverrideNotification;
 	}
 }

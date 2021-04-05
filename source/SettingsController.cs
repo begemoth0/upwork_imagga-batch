@@ -39,11 +39,21 @@ namespace ImaggaBatchUploader
 		public static Settings TryLoadSettingsOveride(string directory)
 		{
 			var path = Path.Combine(directory, settingsFilename);
-			if (File.Exists(settingsFilename))
+			if (File.Exists(path))
 				return LoadSettingsRaw(path);
 			else
 				return null;
 		}
+
+		/// <summary>
+		/// Return merged settings object if we have override. Current implementation is naive and does not permit partial overrides.
+		/// </summary>
+		/// <returns></returns>
+		public static Settings Merge(Settings original, Settings overrided)
+		{
+			return overrided != null ? overrided : original;
+		}
+
 
 		private static Settings LoadSettingsRaw(string path)
 		{

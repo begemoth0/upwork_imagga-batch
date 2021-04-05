@@ -14,10 +14,21 @@ namespace ImaggaBatchUploader
 	public partial class SettingsForm : Form
 	{
 		public Settings SettingsObject { get; private set; }
-		public SettingsForm(Settings settings)
+		public SettingsForm(Settings original, Settings overrided)
 		{
 			InitializeComponent();
-			this.SettingsObject = settings;
+			this.SettingsObject = SettingsController.Merge(original, overrided);
+			// deny editing for override mode
+			if (overrided != null)
+			{
+				btnSave.Enabled = false;
+				lblOverrideNotification.Visible = true;
+			}
+			else
+			{
+				btnSave.Enabled = true;
+				lblOverrideNotification.Visible = false;
+			}
 		}
 
 		private void SettingsForm_Load(object sender, EventArgs e)
