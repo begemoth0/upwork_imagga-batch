@@ -243,39 +243,38 @@ namespace ImaggaBatchUploader
 					File.Delete(ErrorsCsvPath);
 				finishedCallback(result);
 			}
+			var processedImages = Tags.Select(a => a.Filename).ToHashSet();
+			var imageQueue = ImagesList.Where(a => !processedImages.Contains(Path.GetFileName(a)));
 			try
 			{
 				var usage = api.Usage();
 				var monthlyLimit = usage.ExtraData["result"].Value<int>("monthly_limit");
 				var monthlyRequests = usage.ExtraData["result"].Value<int>("monthly_processed");
-				logger.Info($"Imagga API available. Monthly quota used: {monthlyRequests}/{monthlyLimit}.");
+				logger.Info($"Imagga API available. Monthly quota used: {monthlyRequests}/{monthlyLimit}. Tags left: {monthlyLimit - monthlyRequests}, required: {imageQueue.Count()} ");
 				var requestsLeft = monthlyLimit - monthlyRequests;
 				if (requestsLeft < ImagesList.Count)
 				{
-					LastError = $"Insufficient API calls quota. Images to tag: {ImagesList.Count}, requests left: {requestsLeft}. Reduce number of images in the batch or upgrade API usage restrictions.";
+					LastError = $"Insufficient API calls quota. Reduce number of images in the batch or upgrade API usage restrictions. See intermediate output for details.";
 					cleanup(false);
 					return;
 				}
 			}
 			catch (Exception ex)
 			{
-				LastError = "Can't start batch processing. See immediate output for details.";
+				LastError = "Can't start batch processing. See intermediate output for details.";
 				logger.Error(ex.Message);
 				cleanup(false);
 				return;
 			}
-			var processedImages = Tags.Select(a => a.Filename).ToHashSet();
 			errorsCsv.WriteHeader<ImageError>();
 			errorsCsv.NextRecord();
 			int taggedSuccessfully = 0;
 			int taggedWithErrors = 0;
 			if (taggingThreshold > 0)
 				logger.Info($"Custom tagging confidence threshold set: {taggingThreshold}");
-			foreach (var imagePath in ImagesList)
+			foreach (var imagePath in imageQueue)
 			{
 				var fname = Path.GetFileName(imagePath);
-				if (processedImages.Contains(fname))
-					continue;
 				try
 				{
 					FileInfo fi = new FileInfo(imagePath);
