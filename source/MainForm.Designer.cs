@@ -252,6 +252,7 @@ namespace ImaggaBatchUploader
 			// 
 			// MainForm
 			// 
+			this.AllowDrop = true;
 			this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
 			this.ClientSize = new System.Drawing.Size(500, 385);
@@ -267,6 +268,8 @@ namespace ImaggaBatchUploader
 			this.Text = "Imagga.com batch tagger";
 			this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.frmMain_FormClosing);
 			this.Load += new System.EventHandler(this.frmMain_Load);
+			this.DragDrop += new System.Windows.Forms.DragEventHandler(this.MainForm_DragDrop);
+			this.DragEnter += new System.Windows.Forms.DragEventHandler(this.MainForm_DragEnter);
 			this.statusStrip1.ResumeLayout(false);
 			this.statusStrip1.PerformLayout();
 			this.gbFolderInfo.ResumeLayout(false);
