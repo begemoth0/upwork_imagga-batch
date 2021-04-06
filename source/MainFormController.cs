@@ -302,7 +302,7 @@ namespace ImaggaBatchUploader
 						}
 						tagsCsv.Flush();
 					}
-					logger.Info($"Tagged OK: '{fname}', {response.Result.Tags.Count()}");
+					logger.Info($"Tagged OK: '{fname}', {response.Result.Tags.Count()} tags received.");
 					taggedSuccessfully += 1;
 				}
 				catch (Exception ex)
