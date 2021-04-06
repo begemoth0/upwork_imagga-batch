@@ -258,6 +258,8 @@ namespace ImaggaBatchUploader
 				errorsCsv.WriteHeader<ImageError>();
 				errorsCsv.NextRecord();
 				errorsCsv.Flush();
+				// update form after we cleared out errors
+				updateCallback();
 			}
 			catch (Exception ex)
 			{
