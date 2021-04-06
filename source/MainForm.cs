@@ -16,7 +16,6 @@ namespace ImaggaBatchUploader
 	{
 		private static Logger logger;
 		private MainFormController logic;
-		private Task taggingTask = null;
 
 		public MainForm()
 		{
@@ -117,32 +116,17 @@ namespace ImaggaBatchUploader
 		}
 
 		private bool stoppedManually = false;
-		private void btnStartStop_Click(object sender, EventArgs e)
+		private bool isExiting = false;
+		private async void btnStartStop_Click(object sender, EventArgs e)
 		{
 			if (!logic.IsTaggingInProcess)
 			{
-				taggingTask = logic.StartTagging(BatchUpdatedCallback, BatchFinishedCallback);
+				logic.InitializeTaggingTask(BatchUpdatedCallback);
 				BindState();
-				if (taggingTask != null)
-				{
-					taggingTask.Start();
-				}
-				else
-				{
-					MessageBox.Show(logic.LastError, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-				}
-			}
-			else
-			{
-				stoppedManually = true;
-				logic.StopTagging();
-			}
-		}
-
-		private void BatchFinishedCallback(bool success)
-		{
-			this.Invoke(new Action(() =>
-			{
+				logic.TaggingTask.Start();
+				bool success = await logic.TaggingTask;
+				if (isExiting)
+					return;
 				if (!stoppedManually)
 				{
 					if (success)
@@ -160,16 +144,25 @@ namespace ImaggaBatchUploader
 				{
 					stoppedManually = false;
 				}
-				taggingTask = null;
 				BindState();
-			}));
+			}
+			else
+			{
+				stoppedManually = true;
+				logic.StopTagging();
+			}
 		}
 
 		private async void frmMain_FormClosing(object sender, FormClosingEventArgs e)
 		{
+			isExiting = true;
 			logic.StopTagging();
-			if (taggingTask != null)
-				await taggingTask;
+			if (logic.IsTaggingInProcess)
+			{
+				e.Cancel = true;
+				await logic.TaggingTask;
+				Close();
+			}
 		}
 
 		private void btnSettings_Click(object sender, EventArgs e)
