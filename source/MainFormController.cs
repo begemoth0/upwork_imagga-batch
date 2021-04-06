@@ -277,7 +277,6 @@ namespace ImaggaBatchUploader
 				{
 					FileInfo fi = new FileInfo(imagePath);
 					logger.Debug($"Tagging '{fname}', file size: {GetBytesReadable(fi.Length)}");
-					Thread.Sleep(5000);
 					var tagAsyncTask = api.TagsByImagePath(imagePath, settings.TaggingThreshold, ct);
 					// wait without throwing exception on cancelling 
 					Task.WaitAny(tagAsyncTask);
