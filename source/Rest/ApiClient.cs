@@ -52,6 +52,19 @@ namespace ImaggaBatchUploader.Rest
 			else
 			{
 				var msg = response.ErrorException != null ? response.ErrorException.Message : response.StatusDescription;
+				try
+				{
+					// try to extract info from response body
+					if (!string.IsNullOrEmpty(response.Content))
+					{
+						var error = JsonConvert.DeserializeObject<ApiResponse>(response.Content);
+						if (error != null)
+							msg = error.Status.Text;
+					}
+				}
+				catch
+				{ 
+				}
 				throw new ApiException(msg, response.StatusCode, response.ErrorException);
 			}
 		}

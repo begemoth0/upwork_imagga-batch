@@ -305,13 +305,17 @@ namespace ImaggaBatchUploader
 				}
 				catch (Exception ex)
 				{
-					var aex = ex as ApiException;
 					var error = new ImageError()
 					{
 						Filename = fname,
-						HttpCode = aex != null ? ((int)aex.HttpCode).ToString() : null,
 						ErrorDescription = ex.Message
 					};
+					// unwrap api exception if possible
+					if (ex is AggregateException agg && agg.InnerException is ApiException aex)
+					{
+						error.ErrorDescription = aex.Message;
+						error.HttpCode = ((int)aex.HttpCode).ToString();
+					}
 					Errors.Add(error);
 					logger.Warn($"Tagging error: '{fname}', {error.ErrorDescription}");
 					errorsCsv.WriteRecord(error);
