@@ -21,7 +21,7 @@ Process begins when you press the **Start** button. Before actual tagging progra
 
 1. Is Imagga.com API available.
 1. Are *API key* and *API secret* settings recognized by Imagga API.
-1. Is there enough quota left to tag all images in the folder.
+1. Is there enough quota left to tag at least one image.
 1. Can we open output files (tags and errors CSV) for writing. It's common mistake to have them left opened in Excel, which prevents another programs from writing.
 
 If any of these checks fail, program displays message box and stops. Else it displays progress bar and procedes. File with old errors gets cleaned when tagging begins to avoid confusion: if error was temporary there's no need to persist it, in other case it will come up again.

@@ -131,8 +131,15 @@ namespace ImaggaBatchUploader
 				{
 					if (success)
 					{
+						var errors = new List<string>();
+						if (logic.BatchTruncated)
+							errors.Add("API quota exceeded. Only part of images have been processed.");
 						if (logic.Errors.Count > 0)
-							MessageBox.Show("Batch finished with errors.", "Success (almost :)", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+							errors.Add("Some images processed with errors.");
+						if (errors.Count > 0)
+						{
+							MessageBox.Show(string.Join(' ', errors), "Success (almost :)", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+						}
 						else
 							MessageBox.Show("Batch finished successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
 					}

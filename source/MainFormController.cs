@@ -49,6 +49,10 @@ namespace ImaggaBatchUploader
 		public List<ImageTag> Tags { get; set; }
 		public List<ImageError> Errors { get; private set; }
 		/// <summary>
+		/// Batch of images has been truncated to fit monthly API quota
+		/// </summary>
+		public bool BatchTruncated { get; set; }
+		/// <summary>
 		/// Settings that have been loaded on program start.
 		/// </summary>
 		public Settings SettingsOriginal { get; private set; }
@@ -221,6 +225,7 @@ namespace ImaggaBatchUploader
 			// perform usage quota check
 			var processedImages = Tags.Select(a => a.Filename).ToHashSet();
 			var imageQueue = ImagesList.Where(a => !processedImages.Contains(Path.GetFileName(a))).ToList();
+			BatchTruncated = false;
 			try
 			{
 				var usageAsyncTask = api.Usage(ct);
@@ -233,11 +238,19 @@ namespace ImaggaBatchUploader
 				var monthlyLimit = usageAsyncTask.Result.ExtraData["result"].Value<int>("monthly_limit");
 				var monthlyRequests = usageAsyncTask.Result.ExtraData["result"].Value<int>("monthly_processed");
 				logger.Info($"Imagga API available. Monthly quota used: {monthlyRequests}/{monthlyLimit}. Tags left: {monthlyLimit - monthlyRequests}, required: {imageQueue.Count} ");
-				var requestsLeft = monthlyLimit - monthlyRequests;
+				// helper value to test quota exceeded cornner cases
+				var debugQuotaCorrection = 0;
+				var requestsLeft = monthlyLimit - monthlyRequests + debugQuotaCorrection;
+				if (requestsLeft <= 0)
+				{
+					LastError = $"Monthly API calls quota exceeded. Use another credentials or upgrade API usage restrictions. See intermediate output for details.";
+					return cleanup(false);
+				}
 				if (requestsLeft < imageQueue.Count)
 				{
-					LastError = $"Insufficient API calls quota. Reduce number of images in the batch or upgrade API usage restrictions. See intermediate output for details.";
-					return cleanup(false);
+					logger.Warn("Insufficient API usage quota to process whole batch. Batch will be processed partially.");
+					imageQueue = imageQueue.Take(requestsLeft).ToList();
+					BatchTruncated = true;
 				}
 			}
 			catch (Exception ex)
