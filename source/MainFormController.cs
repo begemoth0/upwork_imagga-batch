@@ -89,7 +89,7 @@ namespace ImaggaBatchUploader
 		/// <returns></returns>
 		public bool SelectDirectory(string path)
 		{
-			List<string> images = null;
+			var images = new List<string>();
 			Settings overrided = null;
 			var allowedExtensions = SettingsOriginal.ImageExtensions;
 			try
@@ -110,10 +110,22 @@ namespace ImaggaBatchUploader
 			{
 				var files = Directory.EnumerateFiles(path);
 				var extSet = allowedExtensions.Select(a => a.ToLower()).ToHashSet();
-				images = files.Where(a => extSet.Contains(Path.GetExtension(a).ToLower())).ToList();
-				var fc = files.Count();
-				unrecognized = fc - images.Count;
-				logger.Info($"Selected folder: {path}. Images extensions: '{string.Join(' ', allowedExtensions)}'. Total files: {fc}, images: {images.Count}.");
+				var unrecognizedFiles = new List<string>();
+				foreach (var f in files)
+				{
+					if (extSet.Contains(Path.GetExtension(f).ToLower()))
+						images.Add(f);
+					else
+						unrecognizedFiles.Add(f);
+				}
+				var unrecognizedExtensions = unrecognizedFiles
+					.Select(a => Path.GetExtension(a).ToLower())
+					.GroupBy(a => a)
+					.ToDictionary(a => a.Key, g => g.Count())
+					.OrderByDescending(a => a.Value)
+					.Select(a => $"{a.Key}({a.Value})");
+				unrecognized = unrecognizedFiles.Count();
+				logger.Info($"Selected folder: {path}. Images extensions: '{string.Join(' ', allowedExtensions)}'. Total files: {files.Count()}, images: {images.Count}. Unrecognized extensions: {string.Join(", ", unrecognizedExtensions)}.");
 			}
 			catch (Exception ex)
 			{
@@ -241,7 +253,7 @@ namespace ImaggaBatchUploader
 				// helper value to test quota exceeded cornner cases
 				var debugQuotaCorrection = 0;
 				var requestsLeft = monthlyLimit - monthlyRequests + debugQuotaCorrection;
-				if (requestsLeft <= 0)
+				if (requestsLeft <= 0 && imageQueue.Count > 0)
 				{
 					LastError = $"Monthly API calls quota exceeded. Use another credentials or upgrade API usage restrictions. See intermediate output for details.";
 					return cleanup(false);
