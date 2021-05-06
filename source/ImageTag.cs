@@ -30,7 +30,7 @@ namespace ImageBatchUploader
 		/// <summary>
 		/// Tag language 
 		/// </summary>
-		[CsvHelper.Configuration.Attributes.Index(0)]
+		[CsvHelper.Configuration.Attributes.Index(3)]
 		[CsvHelper.Configuration.Attributes.Name("language")]
 		public string Language { get; set; }
 	}

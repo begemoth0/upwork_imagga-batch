@@ -1,14 +1,20 @@
 {
-  "DefaultApi": "Imagga",
+  "DefaultApi": "Everypixel",
   "ImageExtensions": [
     ".jpg",
     ".jpeg",
     ".png"
   ],
-  "TaggingThreshold": 30,
   "Imagga": {
     "ApiKey": "acc_a5edda84c39d12c",
     "ApiSecret": "7cf5ff22dc058eb727b7d9541c7bca5e",
-    "ApiEndpoint": "https://api.imagga.com"
+    "ApiEndpoint": "https://api.imagga.com",
+    "TaggingThreshold": 30
+  },
+  "Everypixel": {
+    "ApiKey": "w3I2iq14Kh73VcVJ6IqvEwnh",
+    "ApiSecret": "aA8OsW2yXujJxLcr2fYWTAHFzsutoZzAs242UJM0tHVNnhkK",
+    "ApiEndpoint": "https://api.everypixel.com",
+    "TaggingThreshold": 30
   }
 }

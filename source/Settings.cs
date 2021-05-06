@@ -31,7 +31,7 @@ namespace ImageBatchUploader
 		/// <summary>
 		/// Currently selected API to use
 		/// </summary>
-		public string DefaultApi { get; set; }
+		public Api.ApiType? DefaultApi { get; set; }
 		/// <summary>
 		/// Files with which extensions are considered images
 		/// </summary>

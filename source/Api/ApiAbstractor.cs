@@ -33,6 +33,7 @@ namespace ImageBatchUploader.Api
 		private NLog.Logger logger;
 
 		private Imagga.ApiClient imaggaApi;
+		private Everypixel.ApiClient everypixelApi;
 		void IDisposable.Dispose()
 		{
 			ReleaseOutputFiles();
@@ -49,8 +50,9 @@ namespace ImageBatchUploader.Api
 			var targetDir = Directory.GetParent(folderPath).FullName;
 			if (settings.DefaultApi == null)
 				throw new Exception("Default API setting can't be null");
-			this.ErrorsCsvPath = Path.Combine(targetDir, $"errors-{folderName}.{settings.DefaultApi.ToLower()}.csv");
-			this.TagsCsvPath = Path.Combine(targetDir, $"tags-{folderName}.{settings.DefaultApi.ToLower()}.csv");
+			string apiTypeString = settings.DefaultApi.ToString().ToLower();
+			this.ErrorsCsvPath = Path.Combine(targetDir, $"errors-{folderName}.{apiTypeString}.csv");
+			this.TagsCsvPath = Path.Combine(targetDir, $"tags-{folderName}.{apiTypeString}.csv");
 		}
 		/// <summary>
 		/// List files that have already been processed
@@ -74,16 +76,24 @@ namespace ImageBatchUploader.Api
 
 		public void InstantiateApiClient()
 		{
-			switch (settings.DefaultApi.ToLower())
+			switch (settings.DefaultApi)
 			{
-				case "imagga":
+				case ApiType.Imagga:
 					var st = settings.Imagga;
 					if (st == null)
 						throw new Exception("Unable to find Imagga section in settings.");
 					logger.Debug($"Instantiating API client. Type: {settings.DefaultApi}, API Key: {st.ApiKey}, endpoint: {st.ApiEndpoint}. Tagging threshold: {st.TaggingThreshold}");
-					imaggaApi = new Imagga.ApiClient(settings.Imagga.ApiEndpoint, settings.Imagga.ApiKey, settings.Imagga.ApiSecret);
+					imaggaApi = new Imagga.ApiClient(st.ApiEndpoint, st.ApiKey, st.ApiSecret);
 					break;
-				default:
+				case ApiType.Everypixel:
+					var est = settings.Everypixel;
+					if (est == null)
+						throw new Exception("Unable to find Everypixel section in settings.");
+					logger.Debug($"Instantiating API client. Type: {settings.DefaultApi}, API Key: {est.ApiKey}, endpoint: {est.ApiEndpoint}. Tagging threshold: {est.TaggingThreshold}");
+					everypixelApi = new Everypixel.ApiClient(est.ApiEndpoint, est.ApiKey, est.ApiSecret);
+					break;
+
+			default:
 					throw new Exception($"Unknown default api: {settings.DefaultApi}");
 			}
 		}
@@ -97,6 +107,7 @@ namespace ImageBatchUploader.Api
 			tagsCsv = new CsvWriter(new StreamWriter(TagsCsvPath, false, new UTF8Encoding(true)), GetCsvConfiguration());
 			// overwrite existing file with restored data to ensure consistency
 			tagsCsv.WriteRecords(tags);
+			tagsCsv.Flush();
 			// initialize error output
 			errorsCsv = new CsvWriter(new StreamWriter(ErrorsCsvPath, false, new UTF8Encoding(true)), GetCsvConfiguration());
 			errorsCsv.WriteHeader<ImageError>();
@@ -162,6 +173,16 @@ namespace ImageBatchUploader.Api
 					}
 				}
 			}
+			if (everypixelApi != null)
+			{
+				var response = await everypixelApi.Keywords(imagePath, settings.Everypixel.TaggingThreshold / 100, ct);
+				result = response.Keywords.Select(a => new ImageTag()
+				{
+					Filename = fname,
+					Confidence = Math.Round(a.Score * 100),
+					Value = a.Keyword
+				}).ToList();
+			}
 			return result;
 		}
 
@@ -182,8 +203,16 @@ namespace ImageBatchUploader.Api
 			if (ex is AggregateException agg && agg.InnerException is ApiException aex)
 			{
 				error.ErrorDescription = aex.Message;
-				error.HttpCode = ((int)aex.HttpCode).ToString();
-			}
+				var httpCode = (int)aex.HttpCode;
+				error.HttpCode = httpCode.ToString();
+				error.QuotaExceeded =
+					// https://labs.everypixel.com/api/docs
+					// 429 - you have exceeded available requests from your plan.
+					(settings.DefaultApi == ApiType.Everypixel && httpCode == 429) ||
+					// https://docs.imagga.com/#errors
+					// Forbidden – You have reached one of your subscription limits therefore you are temporarily not allowed to perform this type of request.
+					(settings.DefaultApi == ApiType.Imagga && httpCode == 403);
+			};
 			return error;
 		}
 
