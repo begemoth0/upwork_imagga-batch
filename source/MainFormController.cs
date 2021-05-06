@@ -1,6 +1,7 @@
 ﻿using CsvHelper;
 using CsvHelper.Configuration;
-using ImaggaBatchUploader.Rest;
+using ImageBatchUploader.Api;
+using ImageBatchUploader.Api.Imagga;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -11,7 +12,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ImaggaBatchUploader
+namespace ImageBatchUploader
 {
 	/// <summary>
 	/// Class that represents UX logic and controls batch workflow
@@ -19,17 +20,7 @@ namespace ImaggaBatchUploader
 	public class MainFormController
 	{
 		private NLog.Logger logger;
-		private const string TagsFilename = "tags.csv";
-		private const string ErrorsFilename = "errors.csv";
 		private CancellationTokenSource cancellationTokenSource;
-		/// <summary>
-		/// Full path to CSV file with tags
-		/// </summary>
-		public string TagsCsvPath { get; private set; }
-		/// <summary>
-		/// Full path to CSV file with errors
-		/// </summary>
-		public string ErrorsCsvPath { get; private set; }
 		/// <summary>
 		/// Error which occured during last method call
 		/// </summary>
@@ -40,18 +31,10 @@ namespace ImaggaBatchUploader
 		public List<string> ImagesList { get; private set; }
 		public int UnrecognizedFilesCount { get; private set; }
 		/// <summary>
-		/// Currently selected directory
-		/// </summary>
-		public string SelectedDirectory { get; private set; }
-		/// <summary>
 		/// Tags for images from current session or restored state.
 		/// </summary>
 		public List<ImageTag> Tags { get; set; }
 		public List<ImageError> Errors { get; private set; }
-		/// <summary>
-		/// Batch of images has been truncated to fit monthly API quota
-		/// </summary>
-		public bool BatchTruncated { get; set; }
 		/// <summary>
 		/// Settings that have been loaded on program start.
 		/// </summary>
@@ -64,6 +47,14 @@ namespace ImaggaBatchUploader
 		/// Current OR last finished tagging task. Has null value if no tagging has been started so far.
 		/// </summary>
 		public Task<bool> TaggingTask { get; private set; }
+		/// <summary>
+		/// Abstraction layer which hides various API implementation/handling details
+		/// </summary>
+		public ApiAbstractor Api { get; private set; }
+		/// <summary>
+		/// Flag which is turned ON if we encounter quota exceeded errors during image processing.
+		/// </summary>
+		public bool QuotaExceeded { get; private set; }
 		public MainFormController(NLog.Logger logger)
 		{
 			this.logger = logger;
@@ -90,13 +81,14 @@ namespace ImaggaBatchUploader
 		public bool SelectDirectory(string path)
 		{
 			var images = new List<string>();
-			Settings overrided = null;
-			var allowedExtensions = SettingsOriginal.ImageExtensions;
+			ApiAbstractor api = null;
+			Settings effective, overrided = null;
 			try
 			{
 				overrided = SettingsController.TryLoadSettingsOveride(path);
 				if (overrided != null)
-					allowedExtensions = overrided.ImageExtensions;
+					logger.Debug($"Using overrided settings from '{path}'.");
+				effective = SettingsController.Merge(SettingsOriginal, overrided);
 			}
 			catch (Exception ex)
 			{
@@ -104,12 +96,21 @@ namespace ImaggaBatchUploader
 				LastError = "Can't read settings override file. See details in intermediate output.";
 				return false;
 			}
-			//var allowedExtensions = settingsOverride != null? settingsOverride.
+			try
+			{
+				api = new ApiAbstractor(logger, effective, path);
+			}
+			catch (Exception ex)
+			{
+				logger.Error(ex.Message);
+				LastError = "Can't instantiate API abstractor. See details in intermediate output.";
+				return false;
+			}
 			int unrecognized;
 			try
 			{
 				var files = Directory.EnumerateFiles(path);
-				var extSet = allowedExtensions.Select(a => a.ToLower()).ToHashSet();
+				var extSet = effective.ImageExtensions.Select(a => a.ToLower()).ToHashSet();
 				var unrecognizedFiles = new List<string>();
 				foreach (var f in files)
 				{
@@ -125,7 +126,7 @@ namespace ImaggaBatchUploader
 					.OrderByDescending(a => a.Value)
 					.Select(a => $"{a.Key}({a.Value})");
 				unrecognized = unrecognizedFiles.Count();
-				logger.Info($"Selected folder: {path}. Images extensions: '{string.Join(' ', allowedExtensions)}'. Total files: {files.Count()}, images: {images.Count}. Unrecognized extensions: {string.Join(", ", unrecognizedExtensions)}.");
+				logger.Info($"Selected folder: {path}. Images extensions: '{string.Join(' ', effective.ImageExtensions)}'. Total files: {files.Count()}, images: {images.Count}. Unrecognized extensions: {string.Join(", ", unrecognizedExtensions)}.");
 			}
 			catch (Exception ex)
 			{
@@ -133,61 +134,34 @@ namespace ImaggaBatchUploader
 				LastError = "Can't open selected folder. See details in intermediate output.";
 				return false;
 			}
-			var targetDir = Directory.GetParent(path).FullName;
-			var folderName = Path.GetFileName(path);
-			TagsCsvPath = Path.Combine(targetDir, $"tags-{folderName}.csv");
-			ErrorsCsvPath = Path.Combine(targetDir, $"errors-{folderName}.csv");
 			var tags = new List<ImageTag>();
-			if (File.Exists(TagsCsvPath))
+			try
 			{
-				try
-				{
-					var imageSet = images.Select(a => Path.GetFileName(a)).ToHashSet();
-					using (var csvReader = new CsvReader(File.OpenText(TagsCsvPath), GetCsvConfiguration()))
-					{
-						var records = csvReader.GetRecords<ImageTag>().ToList();
-						// discard state for non-existing files (we don't want state labels to be confusing)
-						tags = records.Where(a => imageSet.Contains(a.Filename)).ToList();
-						logger.Info($"Loaded saved state file '{TagsCsvPath}'.");
-						var discarded = records.Count() - tags.Count;
-						if (discarded > 0)
-							logger.Info($"Discarded {discarded} records due to missing files.");
-					}
+				var records = api.LoadSavedState();
+				//tags
+				var imageSet = images.Select(a => Path.GetFileName(a)).ToHashSet();
+				// discard state for non-existing files (we don't want state labels to be confusing)
+				tags = records.Where(a => imageSet.Contains(a.Filename)).ToList();
+				logger.Info($"Loaded saved state file. {records.Count} records, {tags.Count} for existing images, {records.Count() - tags.Count} discarded.");
 
-				}
-				catch (Exception ex)
-				{
-					logger.Error($"Can't open {TagsCsvPath}: ${ex.Message})");
-					LastError = "Can't read saved state file. See intermediate output for details.";
-					return false;
-				}
 			}
-
+			catch (Exception ex)
+			{
+				logger.Error($"Can't open saved state file: ${ex.Message}. Please fix errors or delete saved file.");
+				LastError = "Can't read saved state file. See intermediate output for details.";
+				return false;
+			}
 			// apply new state consistently
 			ImagesList = images;
-			SelectedDirectory = path;
+			Api = api;
 			UnrecognizedFilesCount = unrecognized;
 			Tags = tags;
 			Errors = new List<ImageError>();
 			SettingsOverride = overrided;
+			QuotaExceeded = false;
 			return true;
 		}
 
-
-		/// <summary>
-		/// Helper method to ensure consistent CSV configuratiion
-		/// </summary>
-		/// <param name="sw"></param>
-		/// <returns></returns>
-		private CsvConfiguration GetCsvConfiguration()
-		{
-			var config = new CsvConfiguration(CultureInfo.InvariantCulture)
-			{
-				Delimiter = ";",
-				LeaveOpen = false
-			};
-			return config;
-		}
 
 
 		/// <summary>
@@ -198,35 +172,22 @@ namespace ImaggaBatchUploader
 		{
 			var settings = SettingsController.Merge(SettingsOriginal, SettingsOverride);
 			cancellationTokenSource =  new CancellationTokenSource();
-			TaggingTask = new Task<bool>(() => BatchProcessingAction(TagsFilename, ErrorsFilename, updateCallback, settings, cancellationTokenSource.Token), cancellationTokenSource.Token);
+			TaggingTask = new Task<bool>(() => BatchProcessingAction(settings, updateCallback, cancellationTokenSource.Token), cancellationTokenSource.Token);
 		}
 
-		private bool BatchProcessingAction(string tagsCsvPath, string errorsCsvPath,
-			Action updateCallback,
-			Settings settings,
-			CancellationToken ct)
+		private bool BatchProcessingAction(Settings settings, Action updateCallback, CancellationToken ct)
 		{
-			CsvWriter tagsCsv = null, errorsCsv = null;
+			QuotaExceeded = false;
 			bool cleanup(bool result)
 			{
-				// close all CSV writers
-				if (tagsCsv != null)
-					tagsCsv.Dispose();
-				if (errorsCsv != null)
-				{
-					errorsCsv.Dispose();
-					if (Errors.Count == 0)
-						File.Delete(ErrorsCsvPath);
-				}
 				cancellationTokenSource = null;
+				Api.ReleaseOutputFiles();
 				return result;
 			}
 			// initialize API client
-			ApiClient api = null;
 			try
 			{
-				logger.Debug($"Testing API client. Endpoint: {settings.ApiEndpoint}, API Key: {settings.ApiKey}");
-				api = new ApiClient(settings.ApiEndpoint, settings.ApiKey, settings.ApiSecret);
+				Api.InstantiateApiClient();
 			}
 			catch (Exception ex)
 			{
@@ -237,32 +198,26 @@ namespace ImaggaBatchUploader
 			// perform usage quota check
 			var processedImages = Tags.Select(a => a.Filename).ToHashSet();
 			var imageQueue = ImagesList.Where(a => !processedImages.Contains(Path.GetFileName(a))).ToList();
-			BatchTruncated = false;
 			try
 			{
-				var usageAsyncTask = api.Usage(ct);
-				Task.WaitAny(usageAsyncTask);
+				var quotaTask = Api.CheckApiQuotas(ct);
+				Task.WaitAny(quotaTask);
 				if (ct.IsCancellationRequested)
 				{
 					logger.Debug($"Cancelled while requesting usage statistics.");
 					return cleanup(true);
 				}
-				var monthlyLimit = usageAsyncTask.Result.ExtraData["result"].Value<int>("monthly_limit");
-				var monthlyRequests = usageAsyncTask.Result.ExtraData["result"].Value<int>("monthly_processed");
-				logger.Info($"Imagga API available. Monthly quota used: {monthlyRequests}/{monthlyLimit}. Tags left: {monthlyLimit - monthlyRequests}, required: {imageQueue.Count} ");
-				// helper value to test quota exceeded cornner cases
-				var debugQuotaCorrection = 0;
-				var requestsLeft = monthlyLimit - monthlyRequests + debugQuotaCorrection;
-				if (requestsLeft <= 0 && imageQueue.Count > 0)
+				if (quotaTask.Result.HasValue)
 				{
-					LastError = $"Monthly API calls quota exceeded. Use another credentials or upgrade API usage restrictions. See intermediate output for details.";
-					return cleanup(false);
-				}
-				if (requestsLeft < imageQueue.Count)
-				{
-					logger.Warn("Insufficient API usage quota to process whole batch. Batch will be processed partially.");
-					imageQueue = imageQueue.Take(requestsLeft).ToList();
-					BatchTruncated = true;
+					var quota = quotaTask.Result.Value;
+					// helper value to test quota exceeded cornner cases
+					var debugQuotaCorrection = 0;
+					var requestsLeft = quota.limit - quota.used + debugQuotaCorrection;
+					logger.Info($"Imagga API available. Monthly quota used: {quota.used}/{quota.limit}. Tags left: {requestsLeft}, required: {imageQueue.Count}.");
+					if (requestsLeft <= 0 && imageQueue.Count > 0)
+						throw new Exception($"Monthly API calls quota exceeded. Use another credentials or upgrade API usage restrictions");
+					if (requestsLeft < imageQueue.Count)
+						logger.Warn("Insufficient API usage quota to process whole batch. Batch will be processed partially.");
 				}
 			}
 			catch (Exception ex)
@@ -274,15 +229,9 @@ namespace ImaggaBatchUploader
 			// lock output files for writing
 			try
 			{
-				tagsCsv = new CsvWriter(new StreamWriter(TagsCsvPath, false, new UTF8Encoding(true)), GetCsvConfiguration());
-				// overwrite existing file with restored data to ensure consistency
-				tagsCsv.WriteRecords(Tags);
-				errorsCsv = new CsvWriter(new StreamWriter(ErrorsCsvPath, false, new UTF8Encoding(true)), GetCsvConfiguration());
+				Api.LockOutputFiles(Tags);
 				// discard old errors and move on
 				Errors.Clear();
-				errorsCsv.WriteHeader<ImageError>();
-				errorsCsv.NextRecord();
-				errorsCsv.Flush();
 				// update form after we cleared out errors
 				updateCallback();
 			}
@@ -292,8 +241,6 @@ namespace ImaggaBatchUploader
 				logger.Error(ex.Message);
 				return cleanup(false);
 			}
-			if (settings.TaggingThreshold > 0)
-				logger.Info($"Custom tagging confidence threshold set: {settings.TaggingThreshold}");
 			// main tagging loop
 			int taggedSuccessfully = 0;
 			int taggedWithErrors = 0;
@@ -304,50 +251,29 @@ namespace ImaggaBatchUploader
 				{
 					FileInfo fi = new FileInfo(imagePath);
 					logger.Debug($"Tagging '{fname}', file size: {GetBytesReadable(fi.Length)}");
-					var tagAsyncTask = api.TagsByImagePath(imagePath, settings.TaggingThreshold, ct);
+					var tagAsyncTask = Api.TagSingleImage(fname, ct);
 					// wait without throwing exception on cancelling 
 					Task.WaitAny(tagAsyncTask);
 					if (ct.IsCancellationRequested)
-						break;
-					var response = tagAsyncTask.Result;
-					foreach (var t in response.Result.Tags)
-					{
-						foreach (var tagLanguagePair in t.Tag)
-						{
-							var tag = new ImageTag()
-							{
-								Filename = fname,
-								Confidence = Math.Round(t.Confidence),
-								Language = tagLanguagePair.Key,
-								Value = tagLanguagePair.Value
-							};
-							Tags.Add(tag);
-							tagsCsv.WriteRecord(tag);
-							tagsCsv.NextRecord();
-						}
-						tagsCsv.Flush();
-					}
-					logger.Info($"Tagged OK: '{fname}', {response.Result.Tags.Count()} tags received.");
+						return cleanup(true);
+					logger.Info($"Tagged OK: '{fname}', {tagAsyncTask.Result.Count()} tags received.");
+					Api.WriteTagToCsv(tagAsyncTask.Result);
+					Tags.AddRange(tagAsyncTask.Result);
 					taggedSuccessfully += 1;
+
 				}
 				catch (Exception ex)
 				{
-					var error = new ImageError()
+					var error = Api.ExceptionToError(ex, fname);
+					// no need to process further
+					if (error.QuotaExceeded)
 					{
-						Filename = fname,
-						ErrorDescription = ex.Message
-					};
-					// unwrap api exception if possible
-					if (ex is AggregateException agg && agg.InnerException is ApiException aex)
-					{
-						error.ErrorDescription = aex.Message;
-						error.HttpCode = ((int)aex.HttpCode).ToString();
+						QuotaExceeded = true;
+						break;
 					}
 					Errors.Add(error);
 					logger.Warn($"Tagging error: '{fname}', {error.ErrorDescription}");
-					errorsCsv.WriteRecord(error);
-					errorsCsv.NextRecord();
-					errorsCsv.Flush();
+					Api.WriteErrorToCsv(error);
 					taggedWithErrors += 1;
 				}
 				updateCallback();

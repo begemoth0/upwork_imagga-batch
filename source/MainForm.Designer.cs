@@ -1,5 +1,5 @@
 ﻿
-namespace ImaggaBatchUploader
+namespace ImageBatchUploader
 {
 	partial class MainForm
 	{
@@ -265,7 +265,7 @@ namespace ImaggaBatchUploader
 			this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
 			this.MaximizeBox = false;
 			this.Name = "MainForm";
-			this.Text = "Imagga.com batch tagger";
+			this.Text = "Images batch tagger";
 			this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.frmMain_FormClosing);
 			this.Load += new System.EventHandler(this.frmMain_Load);
 			this.DragDrop += new System.Windows.Forms.DragEventHandler(this.MainForm_DragDrop);

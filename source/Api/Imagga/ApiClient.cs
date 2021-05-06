@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ImaggaBatchUploader.Rest
+namespace ImageBatchUploader.Api.Imagga
 {
 	/// <summary>
 	/// Imagga.com API client

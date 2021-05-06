@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace ImaggaBatchUploader
+namespace ImageBatchUploader
 {
 	public class ImageError
 	{
@@ -24,5 +24,10 @@ namespace ImaggaBatchUploader
 		[CsvHelper.Configuration.Attributes.Index(2)]
 		[CsvHelper.Configuration.Attributes.Name("error_description")]
 		public string ErrorDescription { get; set; }
+		/// <summary>
+		/// Special kind of error that forces us to stop further processing.
+		/// </summary>
+		[CsvHelper.Configuration.Attributes.Ignore]
+		public bool QuotaExceeded { get; set; }
 	}
 }

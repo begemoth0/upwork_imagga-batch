@@ -1,5 +1,5 @@
 ﻿
-namespace ImaggaBatchUploader
+namespace ImageBatchUploader
 {
 	partial class SettingsForm
 	{

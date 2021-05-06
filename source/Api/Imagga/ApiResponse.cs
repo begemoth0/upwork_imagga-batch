@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace ImaggaBatchUploader.Rest
+namespace ImageBatchUploader.Api.Imagga
 {
 	/// <summary>
 	/// Imagga API call result

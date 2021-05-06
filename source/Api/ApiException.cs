@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace ImaggaBatchUploader.Rest
+namespace ImageBatchUploader.Api
 {
 	class ApiException : Exception
 	{

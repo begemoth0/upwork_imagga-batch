@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace ImaggaBatchUploader
+namespace ImageBatchUploader
 {
 	public static class SettingsController
 	{

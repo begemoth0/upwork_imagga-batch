@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace ImaggaBatchUploader
+namespace ImageBatchUploader
 {
 	/// <summary>
 	/// Class that represents image tag for single language

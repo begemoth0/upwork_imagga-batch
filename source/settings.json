@@ -1,11 +1,14 @@
 {
-  "ApiKey": "acc_a5edda84c39d12c",
-  "ApiSecret": "7cf5ff22dc058eb727b7d9541c7bca5e",
-  "ApiEndpoint": "https://api.imagga.com",
+  "DefaultApi": "Imagga",
   "ImageExtensions": [
     ".jpg",
     ".jpeg",
     ".png"
   ],
-  "TaggingThreshold": 0
+  "TaggingThreshold": 30,
+  "Imagga": {
+    "ApiKey": "acc_a5edda84c39d12c",
+    "ApiSecret": "7cf5ff22dc058eb727b7d9541c7bca5e",
+    "ApiEndpoint": "https://api.imagga.com"
+  }
 }

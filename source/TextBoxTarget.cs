@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Windows.Forms;
 
-namespace ImaggaBatchUploader
+namespace ImageBatchUploader
 {
     /// <summary>
     /// NLog target for writing to TextBox

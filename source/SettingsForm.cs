@@ -9,7 +9,7 @@ using System.Linq;
 using System.IO;
 using Newtonsoft.Json;
 
-namespace ImaggaBatchUploader
+namespace ImageBatchUploader
 {
 	public partial class SettingsForm : Form
 	{
@@ -33,10 +33,10 @@ namespace ImaggaBatchUploader
 
 		private void SettingsForm_Load(object sender, EventArgs e)
 		{
-			tbKey.Text = SettingsObject.ApiKey;
-			tbSecret.Text = SettingsObject.ApiSecret;
+			tbKey.Text = SettingsObject.Imagga.ApiKey;
+			tbSecret.Text = SettingsObject.Imagga.ApiSecret;
 			tbExtensions.Text = string.Join(' ', SettingsObject.ImageExtensions);
-			tbEndpoint.Text = SettingsObject.ApiEndpoint;
+			tbEndpoint.Text = SettingsObject.Imagga.ApiEndpoint;
 		}
 
 		private void btnSave_Click(object sender, EventArgs e)
@@ -45,9 +45,9 @@ namespace ImaggaBatchUploader
 			{
 				// collect settings object
 				Settings sobj = SettingsObject.Clone();
-				sobj.ApiKey = tbKey.Text.Trim();
-				sobj.ApiSecret = tbSecret.Text.Trim();
-				sobj.ApiEndpoint = tbEndpoint.Text.Trim();
+				sobj.Imagga.ApiKey = tbKey.Text.Trim();
+				sobj.Imagga.ApiSecret = tbSecret.Text.Trim();
+				sobj.Imagga.ApiEndpoint = tbEndpoint.Text.Trim();
 				sobj.ImageExtensions = tbExtensions.Text
 					.Split(' ', StringSplitOptions.RemoveEmptyEntries)
 					.Where(a => a.IndexOfAny(Path.GetInvalidFileNameChars()) < 0)

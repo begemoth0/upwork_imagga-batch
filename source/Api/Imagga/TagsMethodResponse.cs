@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace ImaggaBatchUploader.Rest
+namespace ImageBatchUploader.Api.Imagga
 {
 	/// <summary>
 	/// Response to /tags method, according to https://docs.imagga.com/?csharp#tags

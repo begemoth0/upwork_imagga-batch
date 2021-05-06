@@ -10,7 +10,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace ImaggaBatchUploader
+namespace ImageBatchUploader
 {
 	public partial class MainForm : Form
 	{
@@ -49,14 +49,14 @@ namespace ImaggaBatchUploader
 			else
 			{
 				toolStripProgressBar1.Maximum = logic.ImagesList.Count;
-				tbSelectedFolder.Text = logic.SelectedDirectory;
+				tbSelectedFolder.Text = logic.Api.SelectedDirectory;
 				lblTotalImagesCount.Text = logic.ImagesList.Count.ToString();
 				lblUnrecognizedFilesCount.Text = logic.UnrecognizedFilesCount.ToString();
 				btnStartStop.Enabled = true;
 				llProcessedCount.Text = logic.Tags.Count.ToString();
-				llProcessedCount.Tag = logic.TagsCsvPath;
+				llProcessedCount.Tag = logic.Api.TagsCsvPath;
 				llErrorsCount.Text = logic.Errors.Count.ToString();
-				llErrorsCount.Tag = logic.ErrorsCsvPath;
+				llErrorsCount.Tag = logic.Api.ErrorsCsvPath;
 				BindProgressCounters(logic.Tags, logic.Errors);
 				btnSelectFolder.Enabled = !logic.IsTaggingInProcess;
 				if (logic.IsTaggingInProcess)
@@ -132,7 +132,7 @@ namespace ImaggaBatchUploader
 					if (success)
 					{
 						var errors = new List<string>();
-						if (logic.BatchTruncated)
+						if (logic.QuotaExceeded)
 							errors.Add("API quota exceeded. Only part of images have been processed.");
 						if (logic.Errors.Count > 0)
 							errors.Add("Some images processed with errors.");
