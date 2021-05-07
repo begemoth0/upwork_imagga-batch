@@ -2,6 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+
 namespace ImageBatchUploader
 {
 	/// <summary>
@@ -31,6 +34,7 @@ namespace ImageBatchUploader
 		/// <summary>
 		/// Currently selected API to use
 		/// </summary>
+		[JsonConverter(typeof(StringEnumConverter))]
 		public Api.ApiType? DefaultApi { get; set; }
 		/// <summary>
 		/// Files with which extensions are considered images

@@ -40,12 +40,15 @@ namespace ImageBatchUploader
 			this.tbExtensions = new System.Windows.Forms.TextBox();
 			this.label4 = new System.Windows.Forms.Label();
 			this.lblOverrideNotification = new System.Windows.Forms.Label();
+			this.label5 = new System.Windows.Forms.Label();
+			this.rbtnImagga = new System.Windows.Forms.RadioButton();
+			this.rbtnEverypixel = new System.Windows.Forms.RadioButton();
 			this.SuspendLayout();
 			// 
 			// btnCancel
 			// 
 			this.btnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-			this.btnCancel.Location = new System.Drawing.Point(271, 190);
+			this.btnCancel.Location = new System.Drawing.Point(268, 221);
 			this.btnCancel.Name = "btnCancel";
 			this.btnCancel.Size = new System.Drawing.Size(75, 23);
 			this.btnCancel.TabIndex = 0;
@@ -56,7 +59,7 @@ namespace ImageBatchUploader
 			// btnSave
 			// 
 			this.btnSave.DialogResult = System.Windows.Forms.DialogResult.OK;
-			this.btnSave.Location = new System.Drawing.Point(190, 190);
+			this.btnSave.Location = new System.Drawing.Point(190, 221);
 			this.btnSave.Name = "btnSave";
 			this.btnSave.Size = new System.Drawing.Size(75, 23);
 			this.btnSave.TabIndex = 1;
@@ -67,7 +70,7 @@ namespace ImageBatchUploader
 			// label1
 			// 
 			this.label1.AutoSize = true;
-			this.label1.Location = new System.Drawing.Point(13, 16);
+			this.label1.Location = new System.Drawing.Point(12, 49);
 			this.label1.Name = "label1";
 			this.label1.Size = new System.Drawing.Size(49, 15);
 			this.label1.TabIndex = 2;
@@ -75,14 +78,14 @@ namespace ImageBatchUploader
 			// 
 			// tbKey
 			// 
-			this.tbKey.Location = new System.Drawing.Point(121, 13);
+			this.tbKey.Location = new System.Drawing.Point(121, 46);
 			this.tbKey.Name = "tbKey";
 			this.tbKey.Size = new System.Drawing.Size(225, 23);
 			this.tbKey.TabIndex = 3;
 			// 
 			// tbSecret
 			// 
-			this.tbSecret.Location = new System.Drawing.Point(121, 42);
+			this.tbSecret.Location = new System.Drawing.Point(121, 75);
 			this.tbSecret.Name = "tbSecret";
 			this.tbSecret.Size = new System.Drawing.Size(225, 23);
 			this.tbSecret.TabIndex = 4;
@@ -90,7 +93,7 @@ namespace ImageBatchUploader
 			// label2
 			// 
 			this.label2.AutoSize = true;
-			this.label2.Location = new System.Drawing.Point(12, 45);
+			this.label2.Location = new System.Drawing.Point(13, 78);
 			this.label2.Name = "label2";
 			this.label2.Size = new System.Drawing.Size(63, 15);
 			this.label2.TabIndex = 5;
@@ -98,7 +101,7 @@ namespace ImageBatchUploader
 			// 
 			// tbEndpoint
 			// 
-			this.tbEndpoint.Location = new System.Drawing.Point(121, 89);
+			this.tbEndpoint.Location = new System.Drawing.Point(121, 104);
 			this.tbEndpoint.Name = "tbEndpoint";
 			this.tbEndpoint.Size = new System.Drawing.Size(225, 23);
 			this.tbEndpoint.TabIndex = 6;
@@ -106,15 +109,16 @@ namespace ImageBatchUploader
 			// label3
 			// 
 			this.label3.AutoSize = true;
-			this.label3.Location = new System.Drawing.Point(13, 92);
+			this.label3.Location = new System.Drawing.Point(12, 112);
 			this.label3.Name = "label3";
 			this.label3.Size = new System.Drawing.Size(79, 15);
 			this.label3.TabIndex = 7;
 			this.label3.Text = "API Endpoint:";
+			this.label3.Click += new System.EventHandler(this.rbtnChecked);
 			// 
 			// tbExtensions
 			// 
-			this.tbExtensions.Location = new System.Drawing.Point(121, 118);
+			this.tbExtensions.Location = new System.Drawing.Point(121, 150);
 			this.tbExtensions.Name = "tbExtensions";
 			this.tbExtensions.Size = new System.Drawing.Size(225, 23);
 			this.tbExtensions.TabIndex = 8;
@@ -122,7 +126,7 @@ namespace ImageBatchUploader
 			// label4
 			// 
 			this.label4.AutoSize = true;
-			this.label4.Location = new System.Drawing.Point(13, 121);
+			this.label4.Location = new System.Drawing.Point(13, 153);
 			this.label4.Name = "label4";
 			this.label4.Size = new System.Drawing.Size(102, 15);
 			this.label4.TabIndex = 9;
@@ -131,11 +135,43 @@ namespace ImageBatchUploader
 			// lblOverrideNotification
 			// 
 			this.lblOverrideNotification.AutoSize = true;
-			this.lblOverrideNotification.Location = new System.Drawing.Point(102, 159);
+			this.lblOverrideNotification.Location = new System.Drawing.Point(105, 188);
 			this.lblOverrideNotification.Name = "lblOverrideNotification";
 			this.lblOverrideNotification.Size = new System.Drawing.Size(241, 15);
 			this.lblOverrideNotification.TabIndex = 10;
 			this.lblOverrideNotification.Text = "Using overrided settings.  Editing is disabled.";
+			// 
+			// label5
+			// 
+			this.label5.AutoSize = true;
+			this.label5.Location = new System.Drawing.Point(12, 18);
+			this.label5.Name = "label5";
+			this.label5.Size = new System.Drawing.Size(69, 15);
+			this.label5.TabIndex = 11;
+			this.label5.Text = "Default API:";
+			// 
+			// rbtnImagga
+			// 
+			this.rbtnImagga.AutoSize = true;
+			this.rbtnImagga.Checked = true;
+			this.rbtnImagga.Location = new System.Drawing.Point(121, 14);
+			this.rbtnImagga.Name = "rbtnImagga";
+			this.rbtnImagga.Size = new System.Drawing.Size(65, 19);
+			this.rbtnImagga.TabIndex = 0;
+			this.rbtnImagga.TabStop = true;
+			this.rbtnImagga.Text = "Imagga";
+			this.rbtnImagga.UseVisualStyleBackColor = true;
+			// 
+			// rbtnEverypixel
+			// 
+			this.rbtnEverypixel.AutoSize = true;
+			this.rbtnEverypixel.Location = new System.Drawing.Point(217, 14);
+			this.rbtnEverypixel.Name = "rbtnEverypixel";
+			this.rbtnEverypixel.Size = new System.Drawing.Size(78, 19);
+			this.rbtnEverypixel.TabIndex = 1;
+			this.rbtnEverypixel.Text = "Everypixel";
+			this.rbtnEverypixel.UseVisualStyleBackColor = true;
+			this.rbtnEverypixel.CheckedChanged += new System.EventHandler(this.rbtnChecked);
 			// 
 			// SettingsForm
 			// 
@@ -143,8 +179,11 @@ namespace ImageBatchUploader
 			this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
 			this.CancelButton = this.btnCancel;
-			this.ClientSize = new System.Drawing.Size(355, 218);
+			this.ClientSize = new System.Drawing.Size(355, 256);
 			this.ControlBox = false;
+			this.Controls.Add(this.rbtnEverypixel);
+			this.Controls.Add(this.rbtnImagga);
+			this.Controls.Add(this.label5);
 			this.Controls.Add(this.lblOverrideNotification);
 			this.Controls.Add(this.label4);
 			this.Controls.Add(this.tbExtensions);
@@ -181,5 +220,8 @@ namespace ImageBatchUploader
 		internal System.Windows.Forms.TextBox tbEndpoint;
 		internal System.Windows.Forms.TextBox tbExtensions;
 		private System.Windows.Forms.Label lblOverrideNotification;
+		private System.Windows.Forms.Label label5;
+		private System.Windows.Forms.RadioButton rbtnImagga;
+		private System.Windows.Forms.RadioButton rbtnEverypixel;
 	}
 }

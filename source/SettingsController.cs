@@ -18,6 +18,15 @@ namespace ImageBatchUploader
 			return LoadSettingsRaw(settingsFilename);
 		}
 
+		public static string SettingsToString(Settings settings)
+		{
+			using var sw = new StringWriter();
+			using var jw = new JsonTextWriter(sw);
+			var js = new JsonSerializer();
+			js.Serialize(jw, settings);
+			return sw.ToString();
+		}
+
 		/// <summary>
 		/// Save settings to default storage
 		/// </summary>

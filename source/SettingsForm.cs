@@ -14,10 +14,23 @@ namespace ImageBatchUploader
 	public partial class SettingsForm : Form
 	{
 		public Settings SettingsObject { get; private set; }
+		/// <summary>
+		/// Settings suboject where we store 
+		/// </summary>
+		private Settings.EndpointSettings stashed;
+		private Settings.EndpointSettings displayed;
+
 		public SettingsForm(Settings original, Settings overrided)
 		{
 			InitializeComponent();
 			this.SettingsObject = SettingsController.Merge(original, overrided);
+			// set default values
+			if (SettingsObject.DefaultApi == null)
+				SettingsObject.DefaultApi = Api.ApiType.Imagga;
+			if (SettingsObject.Imagga == null)
+				SettingsObject.Imagga = new Settings.EndpointSettings();
+			if (SettingsObject.Everypixel == null)
+				SettingsObject.Everypixel = new Settings.EndpointSettings();
 			// deny editing for override mode
 			if (overrided != null)
 			{
@@ -31,12 +44,39 @@ namespace ImageBatchUploader
 			}
 		}
 
+		private void BindEndpointSettings(Settings.EndpointSettings epSettings)
+		{
+			displayed = epSettings;
+			tbKey.Text = epSettings.ApiKey;
+			tbSecret.Text = epSettings.ApiSecret;
+			tbEndpoint.Text = epSettings.ApiEndpoint;
+		}
+		private Settings.EndpointSettings CollectEndpointSettings()
+		{
+			var s = displayed.Clone();
+			s.ApiKey = tbKey.Text.Trim();
+			s.ApiSecret = tbSecret.Text.Trim();
+			s.ApiEndpoint = tbEndpoint.Text.Trim();
+			return s;
+		}
 		private void SettingsForm_Load(object sender, EventArgs e)
 		{
-			tbKey.Text = SettingsObject.Imagga.ApiKey;
-			tbSecret.Text = SettingsObject.Imagga.ApiSecret;
+			switch (SettingsObject.DefaultApi)
+			{
+				case Api.ApiType.Everypixel:
+					rbtnEverypixel.Checked = true;
+					stashed = SettingsObject.Imagga;
+					BindEndpointSettings(SettingsObject.Everypixel);
+					break;
+				case Api.ApiType.Imagga:
+					rbtnImagga.Checked = true;
+					stashed = SettingsObject.Everypixel;
+					BindEndpointSettings(SettingsObject.Imagga);
+					break;
+			}
+			if (stashed == null)
+				stashed = new Settings.EndpointSettings();
 			tbExtensions.Text = string.Join(' ', SettingsObject.ImageExtensions);
-			tbEndpoint.Text = SettingsObject.Imagga.ApiEndpoint;
 		}
 
 		private void btnSave_Click(object sender, EventArgs e)
@@ -45,9 +85,18 @@ namespace ImageBatchUploader
 			{
 				// collect settings object
 				Settings sobj = SettingsObject.Clone();
-				sobj.Imagga.ApiKey = tbKey.Text.Trim();
-				sobj.Imagga.ApiSecret = tbSecret.Text.Trim();
-				sobj.Imagga.ApiEndpoint = tbEndpoint.Text.Trim();
+				if (rbtnImagga.Checked)
+				{
+					sobj.DefaultApi = Api.ApiType.Imagga;
+					sobj.Imagga = CollectEndpointSettings();
+					sobj.Everypixel = stashed;
+				}
+				if (rbtnEverypixel.Checked)
+				{
+					sobj.DefaultApi = Api.ApiType.Everypixel;
+					sobj.Everypixel = CollectEndpointSettings();
+					sobj.Imagga = stashed;
+				}
 				sobj.ImageExtensions = tbExtensions.Text
 					.Split(' ', StringSplitOptions.RemoveEmptyEntries)
 					.Where(a => a.IndexOfAny(Path.GetInvalidFileNameChars()) < 0)
@@ -61,6 +110,18 @@ namespace ImageBatchUploader
 			{
 				MessageBox.Show($"Can't save settings file: {ex.Message}.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
 				DialogResult = DialogResult.None;
+			}
+		}
+
+		private void rbtnChecked(object sender, EventArgs e)
+		{
+			// 'form is loading' condition
+			if (stashed != null)
+			{
+				// change places
+				var toDisplay = stashed;
+				stashed = CollectEndpointSettings();
+				BindEndpointSettings(toDisplay);
 			}
 		}
 	}

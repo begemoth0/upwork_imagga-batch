@@ -26,7 +26,7 @@ namespace ImageBatchUploader
 		/// </summary>
 		[CsvHelper.Configuration.Attributes.Index(2)]
 		[CsvHelper.Configuration.Attributes.Name("confidence")]
-		public double Confidence { get; set; }
+		public string Confidence { get; set; }
 		/// <summary>
 		/// Tag language 
 		/// </summary>

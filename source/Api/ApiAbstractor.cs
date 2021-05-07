@@ -106,7 +106,9 @@ namespace ImageBatchUploader.Api
 		{
 			tagsCsv = new CsvWriter(new StreamWriter(TagsCsvPath, false, new UTF8Encoding(true)), GetCsvConfiguration());
 			// overwrite existing file with restored data to ensure consistency
-			tagsCsv.WriteRecords(tags);
+			tagsCsv.WriteHeader<ImageTag>();
+			tagsCsv.NextRecord();
+			WriteTagToCsv(tags);
 			tagsCsv.Flush();
 			// initialize error output
 			errorsCsv = new CsvWriter(new StreamWriter(ErrorsCsvPath, false, new UTF8Encoding(true)), GetCsvConfiguration());
@@ -165,7 +167,7 @@ namespace ImageBatchUploader.Api
 						var tag = new ImageTag()
 						{
 							Filename = fname,
-							Confidence = Math.Round(t.Confidence),
+							Confidence = Math.Round(t.Confidence).ToString(),
 							Language = tagLanguagePair.Key,
 							Value = tagLanguagePair.Value
 						};
@@ -179,7 +181,7 @@ namespace ImageBatchUploader.Api
 				result = response.Keywords.Select(a => new ImageTag()
 				{
 					Filename = fname,
-					Confidence = Math.Round(a.Score * 100),
+					Confidence = Math.Round(a.Score * 100).ToString(),
 					Value = a.Keyword
 				}).ToList();
 			}
@@ -200,25 +202,36 @@ namespace ImageBatchUploader.Api
 				ErrorDescription = ex.Message
 			};
 			// unwrap api exception if possible
-			if (ex is AggregateException agg && agg.InnerException is ApiException aex)
+			if (ex is AggregateException agg)
 			{
-				error.ErrorDescription = aex.Message;
-				var httpCode = (int)aex.HttpCode;
-				error.HttpCode = httpCode.ToString();
-				error.QuotaExceeded =
-					// https://labs.everypixel.com/api/docs
-					// 429 - you have exceeded available requests from your plan.
-					(settings.DefaultApi == ApiType.Everypixel && httpCode == 429) ||
-					// https://docs.imagga.com/#errors
-					// Forbidden – You have reached one of your subscription limits therefore you are temporarily not allowed to perform this type of request.
-					(settings.DefaultApi == ApiType.Imagga && httpCode == 403);
+				error.ErrorDescription = ex.InnerException.Message;
+				if (agg.InnerException is ApiException aex)
+				{
+					var httpCode = (int)aex.HttpCode;
+					error.HttpCode = httpCode.ToString();
+					error.QuotaExceeded =
+						// https://labs.everypixel.com/api/docs
+						// 429 - you have exceeded available requests from your plan.
+						(settings.DefaultApi == ApiType.Everypixel && httpCode == 429) ||
+						// https://docs.imagga.com/#errors
+						// Forbidden – You have reached one of your subscription limits therefore you are temporarily not allowed to perform this type of request.
+						(settings.DefaultApi == ApiType.Imagga && httpCode == 403);
+				}
 			};
 			return error;
 		}
 
 		public void WriteTagToCsv(List<ImageTag> tags)
 		{
-			foreach (var tag in tags)
+			var tagsGroupped = tags.GroupBy(a => new { filename = a.Filename, language = a.Language })
+				.Select(g => new ImageTag()
+				{
+					Filename = g.Key.filename,
+					Language = g.Key.language,
+					Value = string.Join(',', g.Select(a => a.Value.Replace(',', '_'))),
+					Confidence = string.Join(',', g.Select(a => a.Confidence))
+				});
+			foreach (var tag in tagsGroupped)
 			{
 				tagsCsv.WriteRecord(tag);
 				tagsCsv.NextRecord();
@@ -242,7 +255,7 @@ namespace ImageBatchUploader.Api
 		{
 			var config = new CsvConfiguration(CultureInfo.InvariantCulture)
 			{
-				Delimiter = ";",
+				Delimiter = Thread.CurrentThread.CurrentCulture.TextInfo.ListSeparator,
 				LeaveOpen = false
 			};
 			return config;

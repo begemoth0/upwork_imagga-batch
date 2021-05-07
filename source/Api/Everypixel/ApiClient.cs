@@ -40,6 +40,9 @@ namespace ImageBatchUploader.Api.Everypixel
 		private async Task<T> ExecuteRequest<T>(RestRequest request, CancellationToken ct)
 		{
 			var response = await client.ExecuteAsync(request, ct);
+			// throw exception if needed
+			if (response.ErrorException != null)
+				throw response.ErrorException;
 			// try to extract JSON from response body
 			if (!string.IsNullOrEmpty(response.Content))
 			{

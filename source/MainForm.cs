@@ -64,9 +64,11 @@ namespace ImageBatchUploader
 					toolStripProgressBar1.Visible = true;
 					btnStartStop.Text = "Stop";
 					tsLblStatus.Text = "Tagging...";
+					btnSettings.Enabled = false;
 				}
 				else
 				{
+					btnSettings.Enabled = true;
 					// winforms progress bar is animating while visible so it's better to hide it while not tagging
 					toolStripProgressBar1.Visible = false;
 					btnStartStop.Text = "Start";
@@ -176,7 +178,18 @@ namespace ImageBatchUploader
 		{
 			var frmSettings = new SettingsForm(logic.SettingsOriginal, logic.SettingsOverride);
 			if (frmSettings.ShowDialog() == DialogResult.OK)
+			{
 				logic.UpdateSettings(frmSettings.SettingsObject);
+				var settingsString = SettingsController.SettingsToString(frmSettings.SettingsObject);
+				// reload directory if anything is changed
+				if (!string.IsNullOrEmpty(fbDlg.SelectedPath))
+				{
+					logger.Debug($"Settings saved. Reloading selected folder. {settingsString}");
+					SelectFolder(fbDlg.SelectedPath);
+				}
+				else
+					logger.Debug($"Settings saved. {settingsString}");
+			}
 		}
 
 		private void OpenFileFromTag(string filename)
